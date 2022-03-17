@@ -1,4 +1,4 @@
-# theia
+# Theia
 Scripts to control our image prototyping station.
 
 ## Table of contents
@@ -29,5 +29,12 @@ Micro-Manager software configurations are managed through a device property brow
 Tutorials, manuals, datasheets, and parts...
 
 * [MS-2000 XY Piezo Stage Manual](https://www.asiimaging.com/downloads/manuals/ASI-PZ-WK-Inverted-XY.pdf)
+* [MS-2000 Operation](https://asiimaging.com/docs/ms2000_operation)
+* [MS-2000 Serial Communication Setup](https://www.asiimaging.com/docs/tech_note_rs232_comm)
+* [ASI Python Quick Start](https://asiimaging.com/docs/python)
+* [ASI Serial Commands Quick Start](https://www.asiimaging.com/docs/command_quick_start)
 * [Basler Ace User Manual](https://graftek.biz/system/files/2576/original/Basler_Ace_USB_3.0_Manual.pdf?1479057814)
+* [Basler Pylon SDK Manual](https://www.baslerweb.com/fp-1615186793/media/downloads/documents/users_manuals/AW00148804000_pylon_SDK_Samples_Manual.pdf)
+* [Basler Pylon SDK Webinar](https://www.baslerweb.com/en/company/news-press/webinar/pylonc/vod-pylonc/)
+* [Basler Pylon Python Examples](https://github.com/basler/pypylon/tree/master/samples)
 * [Basler I/O Connector Cable](https://www.mouser.com/ProductDetail/405-2200000625)
