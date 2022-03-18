@@ -9,9 +9,16 @@ camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
 camera.Open()
 
 # demonstrate some feature access
-new_width = camera.Width.GetValue() - camera.Width.GetInc()
-if new_width >= camera.Width.GetMin():
-    camera.Width.SetValue(new_width)
+# new_width = camera.Width.GetValue() - camera.Width.GetInc()
+# if new_width >= camera.Width.GetMin():
+#     camera.Width.SetValue(new_width)
+
+camera.TriggerMode.SetValue("On")
+camera.TriggerSelector.SetValue("FrameStart")
+
+camera.LineSelector.SetValue("Line2")
+camera.LineSource.SetValue("ExposureActive")
+camera.LineMinimumOutputPulseWidth.SetValue(100.0) # signal pulse width [us]
 
 numberOfImagesToGrab = 100
 camera.StartGrabbingMax(numberOfImagesToGrab)

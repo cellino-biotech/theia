@@ -118,6 +118,11 @@ class MS2000(SerialPort):
         self.send_command(f"SPEED {axis}={speed}")
         self.read_response()
     
+    def set_ring_buffer(self, axis_byte: int = 15):
+        """Configure ring buffer for individual axis control"""
+        self.send_command(f"RM Y={axis_byte}")
+        self.read_response()
+    
     def get_position(self, axis: str) -> int:
         """Return position of the stage in ASI units (tenths of microns)"""
         self.send_command(f"WHERE {axis}")
@@ -128,6 +133,11 @@ class MS2000(SerialPort):
         """Return position of the stage in microns"""
         pos = self.get_position(axis)
         return pos/10.0
+    
+    def save_settings(self):
+        """Save settings to flash memory"""
+        self.send_command("SS")
+        self.read_response()
     
     # ------------------------------ #
     #    MS2000 Utility Functions    #
