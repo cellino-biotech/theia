@@ -14,6 +14,10 @@ This repository provides scripts to control an XYZ ASI stage, camera, and autofo
 ### ASIStage
 General information about the ASIStage and hardware modules can be found at [ASIImaging](https://www.asiimaging.com/). To control the automated stage from a computer via USB, install the necessary drivers from [Silicon Labs](https://www.asiimaging.com/support/downloads/usb-support-on-ms-2000-wk-controllers/). If running Windows, the [ASI Console](https://www.asiimaging.com/support/downloads/asi-console/) can be used to troubleshoot serial connections and hardware bugs. For other issues, contact ASI technical support at (541) 461 8181 (Eugene, OR). Ask for Joel, Steve, John Daniels or Brandon Simpson. Steve, John, and Brandon develop the ASIStage driver files for Micro-Manager and are thus particularly suited for assisting customers using this software.
 
+### Useful Serial Commands
+* **RM Y=15**   (RBMODE) enables control over all axes
+* **SS**        (SAVESET) save configuration to flash memory for persistent settings
+
 ### CRISP Continuous Autofocus System
 To configure and calibrate the CRISP module, follow the [Micro-Manager plugin instructions from ASI](https://asiimaging.com/docs/crisp_mm_plugin).
 
