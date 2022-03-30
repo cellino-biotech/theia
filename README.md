@@ -16,7 +16,7 @@ General information about the ASIStage and hardware modules can be found at [ASI
 
 ### Useful Serial Commands
 * **RM Y=15**   (RBMODE) enables control over all axes
-* **SS**        (SAVESET) save configuration to flash memory for persistent settings
+* **SS Z**      (SAVESET) save configuration to flash memory for persistent settings
 
 ### CRISP Continuous Autofocus System
 To configure and calibrate the CRISP module, follow the [Micro-Manager plugin instructions from ASI](https://asiimaging.com/docs/crisp_mm_plugin).
