@@ -53,12 +53,13 @@ class SerialPort():
         command = command + '\r'
         self.serial_port.write(command.encode()) # pass as bytearray
     
-    def read_response(self) -> str:
+    def read_response(self, print_to_console: bool = True) -> str:
         response = self.serial_port.readline().decode("utf-8", "ignore").strip()
 
-        # B == one or more motors running   N == no motors running
-        if response != "B" and response != "N": print(f"<-- {response}")
-        return response.strip()
+        if print_to_console:
+            # B == one or more motors running   N == no motors running
+            if response != "B" and response != "N": print(f"<-- {response}")
+        return response
 
     def close(self):
         if self.serial_port.is_open:
@@ -66,7 +67,19 @@ class SerialPort():
 
 
 class MS2000(SerialPort):
-    """Serial connection to MS2000 controller"""
+    """Serial connection to MS2000 controller
+    
+    Error codes:
+        :N-1        Unknown command
+        :N-2        Unrecognized axis parameter
+        :N-3        Missing parameters (command requires one or more axis parameters)
+        :N-4        Parameter out of range
+        :N-5        Operation failed
+        :N-6        Undefined error
+        :N-7..20    Reserved for filterwheel
+        :N-21       Serial command halted by the HALT command
+        :N-30..39   Reserved
+    """
 
     # valid baudrates
     BAUDRATES = [9600, 19200, 28800, 115200]
@@ -78,34 +91,54 @@ class MS2000(SerialPort):
         if baudrate not in self.BAUDRATES:
             raise ValueError("Invalid baudrate. Valid rates include 9600, 19200, 28800, 115200")
         
-    def moverel(self, x: int = 0, y: int = 0, z: int = 0):
+    def moverel(self, x: int = 0, y: int = 0, z: int = 0, f: int = 0):
         """Relative stage translation"""
-        self.send_command(f"MOVREL X={x} Y={y} Z={z}")
+        self.send_command(f"R X={x} Y={y} Z={z} F={f}")
         self.read_response()
     
     def moverel_axis(self, axis: str, dist: int):
         "Relative translation for specific axis"
-        self.send_command(f"MOVREL {axis}={dist}")
+        self.send_command(f"R {axis}={dist}")
         self.read_response()
     
-    def move(self, x: int = 0, y: int = 0, z: int = 0):
+    def move(self, x: int = 0, y: int = 0, z: int = 0, f: int = 0):
         "Absolute stage translation"
-        self.send_command(f"MOVE X={x} Y={y} Z={z}")
+        self.send_command(f"M X={x} Y={y} Z={z} F={f}")
         self.read_response()
     
     def move_axis(self, axis: str, dist: int):
         "Absolute translation for specific axis"
-        self.send_command(f"MOVE {axis}={dist}")
+        self.send_command(f"M {axis}={dist}")
+        self.read_response()
+    
+    def set_speed(self, x: int = None, y: int = None, z: int = None):
+        """Set motor velocity in mm/s"""
+        if x and y and z:
+            self.send_command(f"S X={x} Y={y} Z={z}")
+        elif x and y:
+            self.send_command(f"S X={x} Y={y}")
+        elif x and z:
+            self.send_command(f"S X={x} Z={z}")
+        elif y and z:
+            self.send_command(f"S Y={y} Z={z}")
+        elif x:
+            self.send_command(f"S X={x}")
+        elif y:
+            self.send_command(f"S Y={y}")
+        elif z:
+            self.send_command(f"S Z={z}")
+        else:
+            return
         self.read_response()
     
     def home_all(self):
         """Home all axes"""
-        self.send_command("HOME X Y Z")
+        self.send_command("! X Y Z")
         self.read_response()
     
     def home_axis(self, axis: str):
         """Home specifc axis"""
-        self.send_command("HOME {axis}")
+        self.send_command(f"! {axis}")
         self.read_response()
     
     def load_buffer(self, x: int = 0, y: int = 0, z: int = 0):
@@ -134,9 +167,19 @@ class MS2000(SerialPort):
         pos = self.get_position(axis)
         return pos/10.0
     
+    def set_origin(self):
+        """Sets current position as origin point"""
+        self.send_command("Z")
+        self.read_response()
+    
+    def halt_all_motion(self):
+        """Stop all active motors"""
+        self.send_command("\\")
+        self.read_response()
+    
     def save_settings(self):
         """Save settings to flash memory"""
-        self.send_command("SS")
+        self.send_command("SS Z")
         self.read_response()
     
     # ------------------------------ #
