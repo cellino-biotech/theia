@@ -148,12 +148,32 @@ class MS2000(SerialPort):
     
     def set_max_speed(self, axis: str, speed: int):
         "Set the speed (mm/s) for a specific axis"
-        self.send_command(f"SPEED {axis}={speed}")
+        self.send_command(f"S {axis}={speed}")
+        self.read_response()
+    
+    def scan_x_axis(self, start: int = 0, stop: int = 1):
+        self.send_command(f"NR X={start} Y={stop}")
+        self.read_response()
+        self.send_command("SN X=1 Y=0 Z=0 F=0")
+        self.read_response()
+        self.send_command("SN")
+        self.read_response()
+    
+    def scan_y_axis(self, start: int = 0, stop: int = 1):
+        self.send_command(f"NR X={start} Y={stop}")
+        self.read_response()
+        self.send_command("SN X=0 Y=1 Z=0 F=0")
+        self.read_response()
+        self.send_command("SN")
         self.read_response()
     
     def set_ring_buffer(self, axis_byte: int = 15):
         """Configure ring buffer for individual axis control"""
         self.send_command(f"RM Y={axis_byte}")
+        self.read_response()
+    
+    def ttl(self, x: int = 0, y: int = 0):
+        self.send_command(f"TTL X={x} Y={y}")
         self.read_response()
     
     def get_position(self, axis: str) -> int:
