@@ -1,12 +1,12 @@
 # ===============================================================================
-#    Combine camera and stage logic.
+#    Combine camera and stage logic
 # ===============================================================================
 
 import os
 import time
 import platform
 
-from asi_model import MS2000
+from asistage import MS2000
 from pypylon import pylon
 from pypylon import genicam
 

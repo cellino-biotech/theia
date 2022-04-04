@@ -1,5 +1,5 @@
 # ===============================================================================
-#    Grab and process images from Basler cameras.
+#    Grab and process images from Basler cameras
 # ===============================================================================
 
 from pypylon import pylon
@@ -7,11 +7,6 @@ from pypylon import pylon
 # camera discovery
 camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
 camera.Open()
-
-# demonstrate some feature access
-# new_width = camera.Width.GetValue() - camera.Width.GetInc()
-# if new_width >= camera.Width.GetMin():
-#     camera.Width.SetValue(new_width)
 
 camera.TriggerMode.SetValue("On")
 camera.TriggerSelector.SetValue("FrameStart")

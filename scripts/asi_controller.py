@@ -1,8 +1,8 @@
 # ===============================================================================
-#    Send serial commands to ASI stage.
+#    Send serial commands to ASI stage
 # ===============================================================================
 
-from asi_model import MS2000
+from asistage import MS2000
 
 
 def main():
