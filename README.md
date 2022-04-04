@@ -12,11 +12,15 @@ This repository provides scripts to control an XYZ ASI stage, camera, and autofo
 
 ## Hardware
 ### ASIStage
-General information about the ASIStage and hardware modules can be found at [ASIImaging](https://www.asiimaging.com/). To control the automated stage from a computer via USB, install the necessary drivers from [Silicon Labs](https://www.asiimaging.com/support/downloads/usb-support-on-ms-2000-wk-controllers/). If running Windows, the [ASI Console](https://www.asiimaging.com/support/downloads/asi-console/) can be used to troubleshoot serial connections and hardware bugs. For other issues, contact ASI technical support at (541) 461 8181 (Eugene, OR). Ask for Joel, Steve, John Daniels or Brandon Simpson. Steve, John, and Brandon develop the ASIStage driver files for Micro-Manager and are thus particularly suited for assisting customers using this software.
+General information about the ASIStage and hardware subsystems can be found at [ASIImaging](https://www.asiimaging.com/). To control the automated stage from a computer via USB, install the necessary drivers from [Silicon Labs](https://www.asiimaging.com/support/downloads/usb-support-on-ms-2000-wk-controllers/). If running Windows, the [ASI Console](https://www.asiimaging.com/support/downloads/asi-console/) can be used to troubleshoot serial connections and hardware bugs. For other issues, contact ASI technical support at (541) 461 8181 (Eugene, OR). Ask for Steve Saltekoff or Brandon Simpson, who develop the ASIStage driver files for Micro-Manager.
+
+### Firmware
+The stage firmware has been updated to include the scan module (ADEPT_XYZPF_CRISP_SL_RC). Whenever reinstalling the firmware, the default configuration will result in inaccurate stage motion. To correct this issue, run the **CCA X=18** command to set the correct lead screw thread-count per inch value. Remember to subsequently run the **RESET** command for the configuration to update.
 
 ### Useful Serial Commands
 * **RM Y=15**   (RBMODE) enables control over all axes
 * **SS Z**      (SAVESET) save configuration to flash memory for persistent settings
+* **SS X**      (SAVESET) reset configuration to default&mdash;must **RESET** for changes to take effect
 
 ### CRISP Continuous Autofocus System
 To configure and calibrate the CRISP module, follow the [Micro-Manager plugin instructions from ASI](https://asiimaging.com/docs/crisp_mm_plugin).
