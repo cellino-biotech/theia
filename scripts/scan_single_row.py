@@ -26,6 +26,11 @@ def camera_setup():
         camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         camera.Open()
 
+        # reset ROIs
+        for i in range(8):
+            camera.ROIZoneSelector.SetValue(f"Zone{i}")
+            camera.ROIZoneMode.SetValue("Off")
+
         camera.PixelFormat = "Mono12"
 
         # exposure time range: 20.0 to 10000000.0 us
@@ -58,7 +63,7 @@ def save_image_array(img_array: object, filename: str):
     img.save(filename)
 
 def record_images(camera: object, stage: object, path: str, num_images: int = 0, reconstruct: bool = False):
-    stack = np.empty((0, 2064), float)
+    reconstruction = np.empty((0, 2064), np.uint16)
 
     # use GPIO as trigger
     camera.LineSelector.SetValue("Line3")
@@ -82,7 +87,7 @@ def record_images(camera: object, stage: object, path: str, num_images: int = 0,
 
             if grab_result.GrabSucceeded():
                 if reconstruct:
-                    stack = np.append(stack, grab_result.Array, axis=0)
+                    reconstruction = np.append(reconstruction, grab_result.Array, axis=0)
                 else:
                     img.AttachGrabResultBuffer(grab_result)
                     filename = os.path.join(path, f"img_{img_counter}.jpeg")
@@ -95,14 +100,14 @@ def record_images(camera: object, stage: object, path: str, num_images: int = 0,
         print("Exception: ", e)
     finally:
         if reconstruct:
-            save_image_array(stack, os.path.join(path, "img_reconstruction.tif"))
+            save_image_array(reconstruction, os.path.join(path, "img_reconstruction.tif"))
         stage.close()
         camera.Close()
         print("FINISHED")
 
 def scan(stage: object, start: float, stop: float, vel: float = 0.1):
     # reposition stage axes
-    stage.move(x=0, y=0, z=0, f=0)
+    # stage.move(x=0, y=0, z=0, f=0)
 
     # set TTL output to pulse at constant velocity x-axis movement
     stage.ttl(y=3)
@@ -123,7 +128,7 @@ if __name__ == "__main__":
 
     camera = camera_setup()
 
-    record = Thread(target=record_images, args=(camera, stage, path, 1544, False,))
+    record = Thread(target=record_images, args=(camera, stage, path, 1544, True,))
     record.start()
 
-    scan(stage, start=-0.75, stop=0.75, vel=0.1)
+    scan(stage, start=-0.75, stop=0.75, vel=0.09415)
