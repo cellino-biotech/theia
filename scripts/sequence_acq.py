@@ -1,9 +1,12 @@
 # ===============================================================================
-#    Combine camera and stage logic
+#    Sequence acquisitions can be used to create z-stacks
+#    
+#    Requires TTL signal from camera to stage
+#    Stage moves to the next position in ring buffer at TTL signal
 # ===============================================================================
 
 import os
-import time
+import math
 import platform
 
 from asistage import MS2000
@@ -11,98 +14,114 @@ from pypylon import pylon
 from pypylon import genicam
 
 
-NEW_CONFIG = True
-
-# create MS-2000 serial interface
-stage = MS2000("COM3", 115200)
-
-stage.move_axis("F", 0)
-stage.move_axis("F", 0)
-
-if NEW_CONFIG:
-    # enable all axes to move based on values stored in ring buffer
-    stage.set_ring_buffer(15)
+def config_stage(stage: object, zstack_range_um: int, num_zslices: int):
+    # reset piezo axis
+    stage.move_axis("F", 0)
 
     # query ring buffer configuration
     stage.send_command("RM Y?")
-    stage.read_response()
+    buf_config = stage.read_response()
 
-# check ring buffer mode (F=1 => standard TTL trigger mode)
-stage.send_command("RM F?")
-stage.read_response()
+    # buffer config must read Y=15
+    if "Y=15" not in buf_config:
+        # enable all axes to move based on ring buffer values
+        stage.set_ring_buffer(15)
+        # save configuration to flash memory
+        stage.save_settings()
 
-# clear the ring buffer
-stage.send_command("RM X=0")
+    # check ring buffer mode (F=1 => standard TTL trigger mode)
+    stage.send_command("RM F?")
+    buf_mode = stage.read_response()
 
-# load the buffer (units are 1/10 um)
-for step in range(-500, 500, 20):
-    # for linear z, negative values move closer to sample
-    command = f"LD F={-1*step}"
-    stage.send_command(command)
-    # stage.read_response()
+    if "F=1" not in buf_mode:
+        stage.send_command("RM F=1")
 
-# set TTL
-stage.send_command("TTL X=1")
+    # clear the ring buffer
+    stage.send_command("RM X=0")
 
-try:
-    # image_window = pylon.PylonImageWindow()
-    # image_window.Create(1)
+    # ASI units are 1/10 um
+    stop = math.trunc(zstack_range_um / 10 / 2)
+    start = -1 * stop
+    step = math.trunc(zstack_range_um / num_zslices)
 
-    img = pylon.PylonImage()
-    tlf = pylon.TlFactory.GetInstance()
+    # load the buffer
+    for val in range(start, stop, step):
+        # for linear z, negative values move closer to sample
+        command = f"LD F={-1*val}"
+        stage.send_command(command)
+        # stage.read_response()
 
-    # camera discovery
-    camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
-    camera.Open()
+    # set TTL
+    stage.send_command("TTL X=1")
 
-    camera.TriggerMode.SetValue("On")
-    camera.TriggerSelector.SetValue("FrameStart")
+def config_camera():
+    try:
+        camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
+        camera.Open()
 
-    camera.LineSelector.SetValue("Line2")
-    camera.LineSource.SetValue("ExposureActive")
-    camera.LineMinimumOutputPulseWidth.SetValue(100.0) # signal pulse width [us]
+        camera.TriggerMode.SetValue("On")
+        camera.TriggerSelector.SetValue("FrameStart")
 
-    numberOfImagesToGrab = 50
-    camera.StartGrabbingMax(numberOfImagesToGrab, pylon.GrabStrategy_LatestImageOnly)
+        camera.LineSelector.SetValue("Line2")
+        camera.LineSource.SetValue("ExposureActive")
+        camera.LineMinimumOutputPulseWidth.SetValue(100.0) # signal pulse width [us]
 
-    start = time.time()
-    while camera.IsGrabbing():
-        grabResult = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+        return camera
+    except genicam.GenericException:
+        raise
 
-        if grabResult.GrabSucceeded():
-            # image_window.SetImage(grabResult)
-            # image_window.Show()
-            img.AttachGrabResultBuffer(grabResult)
-        # else:
-            # print(grabResult.ErrorCode)
+def sequence(camera: object, num_zslices: int):
+    try:
+        # image_window = pylon.PylonImageWindow()
+        # image_window.Create(1)
 
-        if platform.system() == 'Windows':
-            # The JPEG format that is used here supports adjusting the image
-            # quality (100 -> best quality, 0 -> poor quality).
-            ipo = pylon.ImagePersistenceOptions()
-            quality = 90
-            ipo.SetQuality(quality)
+        img = pylon.PylonImage()
+        tlf = pylon.TlFactory.GetInstance()
 
-            filename = "saved_pypylon_img_%d.jpeg" % quality
-            while os.path.exists(filename):
-                filename = filename.split(".")[0] + "x" + ".jpeg"
-            img.Save(pylon.ImageFileFormat_Jpeg, filename, ipo)
-        else:
-            filename = "saved_pypylon_img_%d.png"
-            while os.path.exists(filename):
-                filename = filename.split(".")[0] + "x" + ".jpeg"
-            img.Save(pylon.ImageFileFormat_Png, filename)
+        numberOfImagesToGrab = num_zslices
+        camera.StartGrabbingMax(numberOfImagesToGrab, pylon.GrabStrategy_LatestImageOnly)
 
-        grabResult.Release()
-        img.Release()
-        # time.sleep(1)
-except genicam.GenericException:
-    raise
-finally:
-    print(time.time() - start)
-    # housekeeping
-    stage.send_command("TTL X=0")
-    stage.close()
+        while camera.IsGrabbing():
+            grabResult = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
 
-    camera.Close()
-    print("FINISHED!")
+            if grabResult.GrabSucceeded():
+                # image_window.SetImage(grabResult)
+                # image_window.Show()
+                img.AttachGrabResultBuffer(grabResult)
+            else:
+                print(grabResult.ErrorCode)
+
+            if platform.system() == 'Windows':
+                ipo = pylon.ImagePersistenceOptions()
+                quality = 90
+                ipo.SetQuality(quality)
+
+                filename = "saved_pypylon_img_%d.jpeg" % quality
+                while os.path.exists(filename):
+                    filename = filename.split(".")[0] + "x" + ".jpeg"
+                img.Save(pylon.ImageFileFormat_Jpeg, filename, ipo)
+            else:
+                filename = "saved_pypylon_img_%d.png"
+                while os.path.exists(filename):
+                    filename = filename.split(".")[0] + "x" + ".jpeg"
+                img.Save(pylon.ImageFileFormat_Png, filename)
+
+            grabResult.Release()
+            img.Release()
+    except genicam.GenericException:
+        raise
+    finally:
+        stage.send_command("TTL X=0")
+        stage.close()
+        camera.Close()
+        print("FINISHED!")
+
+if __name__ == "__main__":
+    # create MS-2000 serial interface
+    stage = MS2000("COM3", 115200)
+
+    config_stage(stage, zstack_range_um=1000, num_zslices=10)
+
+    camera = config_camera()
+
+    sequence(camera, )

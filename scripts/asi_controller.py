@@ -21,8 +21,8 @@ def main():
 
 if __name__ == "__main__":
     print(
-        "Welcome to the ASI serial command program. Common commands include 'MOVE X=? Y=?'"
-        "and 'WHERE X Y'. When finished, press 'q' to quit."
+        "Welcome to the ASI serial command program. Common commands include"
+        "'MOVE X=? Y=?' and 'WHERE X Y'. When finished, press 'q' to quit."
     )
 
     main()
