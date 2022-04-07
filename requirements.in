@@ -3,3 +3,5 @@ pillow
 pycromanager
 pypylon
 pyserial
+scikit-image
+tifffile
