@@ -2,7 +2,7 @@
 #    Combine camera and stage logic
 # 
 #    To reconstruct an image spanning one FOV:
-#       fov_mm = 1544 * pixel_size_mm (pixel_size = 0.35E-3)
+#       fov_mm = 1544 * pixel_size_mm (pixel_size_mm = 0.35E-3)
 #       scan_speed_mm-s = pixel_size_mm * fps
 # ===============================================================================
 
@@ -30,10 +30,10 @@ FOV_HEIGHT_MM = SENSOR_HEIGHT_PIX * PIX_SIZE_MM
 
 def create_data_dir():
     now = datetime.now()
-    dir = now.strftime("%Y-%m-%d_%H-%M-%S")
-    path = os.path.join("C:/Users/lukas/Data", dir)
+    dirname = now.strftime("%Y-%m-%d_%H-%M-%S")
+    path = os.path.join("C:\\Users\\lukas\\Data", dirname)
     os.mkdir(path)
-    return path
+    return (path, dirname)
 
 def reset_roi_zones(camera: object):
     for i in range(8):
@@ -44,6 +44,8 @@ def reset_roi_zones(camera: object):
         # reset camera to full FOV
         camera.OffsetY.SetValue(0)
         camera.Height = camera.Height.Max
+    
+    camera.AcquisitionFrameRateEnable.SetValue(False)
 
 def set_roi_zones(camera: object, num_zones: int = 3):
     reset_roi_zones(camera)
@@ -89,6 +91,10 @@ def camera_setup():
         # number of buffers allocated for acquisitions
         camera.MaxNumBuffer = 5
 
+        # use GPIO as trigger
+        camera.LineSelector.SetValue("Line3")
+        camera.LineMode.SetValue("Input")
+
         return camera
     except genicam.GenericException as e:
         if "Device is exlusively opened by another client" in e:
@@ -106,18 +112,12 @@ def save_image_array(img_array: object, filename: str):
 
     tifffile.imwrite(filename, img_array, imagej=True)
 
-def record_images(camera: object, stage: object, path: str, num_zones: int = 3, total_row_acq: int = 1544):
+def record_images(camera: object, stage: object, path: str, dirname: str, num_zones: int = 3, total_row_acq: int = 1544):
     # initialize data array
     reconstruction = np.empty((num_zones, total_row_acq, SENSOR_WIDTH_PIX), np.uint16)
 
-    # use GPIO as trigger
-    camera.LineSelector.SetValue("Line3")
-    camera.LineMode.SetValue("Input")
-
     # initialize status
     status = camera.LineStatus.GetValue()
-
-    img = pylon.PylonImage()
 
     # poll line to check for change in status
     while camera.LineStatus.GetValue() == status:
@@ -138,12 +138,7 @@ def record_images(camera: object, stage: object, path: str, num_zones: int = 3, 
             else:
                 print("Error: ", grab_result.ErrorCode, grab_result.ErrorDescription)
             grab_result.Release()
-    except genicam.GenericException as e:
-        print("Exception: ", e)
-    finally:
-        img = Image.fromarray(reconstruction[2])
-        img.save(path + "/recon3.tif")
-
+        
         overlap_stack = []
 
         for i in range(num_zones):
@@ -155,26 +150,22 @@ def record_images(camera: object, stage: object, path: str, num_zones: int = 3, 
 
             overlap_stack.append(reconstruction[i, start:stop, :])
 
-            # zstack = np.append(zstack[i], reconstruction[i, start:stop, :], axis=0)
-
         zstack = np.stack(overlap_stack, axis=0)
-        save_image_array(zstack, os.path.join(path, "zstack.tif"))
-
-        # reset_roi_zones(camera)
-        camera.AcquisitionFrameRateEnable.SetValue(False)
+        save_image_array(zstack, os.path.join(path, dirname + "_stack.tif"))
+    except genicam.GenericException as e:
+        print("Exception: ", e)
+    finally:
+        reset_roi_zones(camera)
         
         camera.Close()
         stage.close()
-        print("FINISHED")
+        # print("FINISHED")
 
 def scan(stage: object, mid_point: tuple, scan_range: float):
     # first move to mid-point
     # stage.set_speed(x=1, y=1)
     # stage.move(x=mid_point[0], y=mid_point[1])
     # stage.wait_for_device()
-
-    # set TTL output to pulse at constant velocity x-axis movement
-    stage.ttl(y=3)
 
     vel = PIX_SIZE_MM * FPS_MAX
 
@@ -187,7 +178,7 @@ def scan(stage: object, mid_point: tuple, scan_range: float):
 
 
 if __name__ == "__main__":
-    path = create_data_dir()
+    path, dirname = create_data_dir()
 
     # create MS-2000 serial interface
     stage = MS2000("COM3", 115200)
@@ -205,7 +196,20 @@ if __name__ == "__main__":
     if camera is not None:
         set_roi_zones(camera, num_zones)
 
-        record = Thread(target=record_images, args=(camera, stage, path, num_zones, total_row_acq,))
+        record = Thread(target=record_images, args=(camera, stage, path, dirname, num_zones, total_row_acq,))
         record.start()
 
     scan(stage, mid_point=mid_point, scan_range=scan_range)
+
+    description = input("Add description: ")
+
+    fname = os.path.join(path, dirname + "_description.txt")
+
+    with open(fname, "w") as f:
+        f.write(f"Total image reconstructions: {num_zones}\n")
+        f.write(f"Total overlapping FOVs: {scan_range_factor}\n")
+        f.write(f"Scan midpoint: {mid_point}\n")
+        f.write(f"Scan range: {scan_range}\n")
+
+        if description:
+            f.write(f"Description: {description}")
