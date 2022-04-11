@@ -14,8 +14,14 @@ This project contains scripts to control an XYZF ASI stage, CRISP autofocus modu
 ### ASIStage
 General information about the ASIStage and hardware subsystems can be found at [ASIImaging](https://www.asiimaging.com/). To control the automated stage from a computer via USB, install the necessary drivers from [Silicon Labs](https://www.asiimaging.com/support/downloads/usb-support-on-ms-2000-wk-controllers/). If running Windows, the [ASI Console](https://www.asiimaging.com/support/downloads/asi-console/) can be used to troubleshoot serial connections and hardware bugs. For other issues, contact ASI technical support at (541) 461 8181 (Eugene, OR). Ask for Steve Saltekoff or Brandon Simpson, the main developers of the ASIStage driver files for Micro-Manager.
 
+Encoders have 10 nm resolution.
+
 ### Firmware
 The stage firmware has been updated to include the scan module (ADEPT_XYZPF_CRISP_SL_RC). Whenever reinstalling the firmware, the default configuration will result in inaccurate stage motion. To correct this issue, run the **CCA X=18** command to set the correct lead screw thread-count per inch value. Remember to subsequently run the **RESET** command for the configuration to update.
+
+* **ADEPT_XYZPF_CRISP_SL**                   original firmware included with stage
+* **ADEPT_XYZPF_CRISP_SL_RC**                adds scan module
+* **ADEPT_XYZPF_CRISP_SL_RC_ENC_INT_SCAN**   adds scan and encoder readout modules
 
 ### Useful Serial Commands
 * **RM Y=15**   (RBMODE) enables control over all axes for sequence acquisitions
@@ -43,6 +49,7 @@ Tutorials, manuals, datasheets, and parts...
 * [ASI Python Quick Start](https://asiimaging.com/docs/python)
 * [ASI Serial Commands Quick Start](https://www.asiimaging.com/docs/command_quick_start)
 * [Basler Ace User Manual](https://graftek.biz/system/files/2576/original/Basler_Ace_USB_3.0_Manual.pdf?1479057814)
+* [Blog: Getting Started With Basler Cameras](https://www.pythonforthelab.com/blog/getting-started-with-basler-cameras/)
 * [Basler Pylon SDK Manual](https://www.baslerweb.com/fp-1615186793/media/downloads/documents/users_manuals/AW00148804000_pylon_SDK_Samples_Manual.pdf)
 * [Basler Pylon SDK Webinar](https://www.baslerweb.com/en/company/news-press/webinar/pylonc/vod-pylonc/)
 * [Basler Pylon Python Examples](https://github.com/basler/pypylon/tree/master/samples)
