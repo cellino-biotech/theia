@@ -151,15 +151,20 @@ class MS2000(SerialPort):
         self.send_command(f"S {axis}={speed}")
         self.read_response()
     
-    def scan_x_axis(self, start: int = 0, stop: int = 1):
-        self.send_command(f"NR X={start} Y={stop}")
+    def scan_x_axis(self, start: int, stop: int, enc_divide: int, num_pix: int):
+        # set ttl to output at x constant move
+        # self.ttl(y=3)
+        self.ttl(x=1)
+        self.send_command(f"NR X={start} Z={enc_divide} F={num_pix}")
         self.read_response()
         self.send_command("SN X=1 Y=0 Z=0 F=0")
         self.read_response()
         self.send_command("SN")
         self.read_response()
     
-    def scan_y_axis(self, start: int = 0, stop: int = 1):
+    def scan_y_axis(self, start: int, stop: int):
+        # set ttl to output at y constant move
+        self.ttl(y=4)
         self.send_command(f"NR X={start} Y={stop}")
         self.read_response()
         self.send_command("SN X=0 Y=1 Z=0 F=0")
