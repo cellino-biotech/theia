@@ -12,21 +12,52 @@ This project contains scripts to control an XYZF ASI stage, CRISP autofocus modu
 
 ## Hardware
 ### ASIStage
-General information about the ASIStage and hardware subsystems can be found at [ASIImaging](https://www.asiimaging.com/). To control the automated stage from a computer via USB, install the necessary drivers from [Silicon Labs](https://www.asiimaging.com/support/downloads/usb-support-on-ms-2000-wk-controllers/). If running Windows, the [ASI Console](https://www.asiimaging.com/support/downloads/asi-console/) can be used to troubleshoot serial connections and hardware bugs. For other issues, contact ASI technical support at (541) 461 8181 (Eugene, OR). Ask for Steve Saltekoff or Brandon Simpson, the main developers of the ASIStage driver files for Micro-Manager.
+General information about the ASIStage and hardware subsystems can be found at [ASIImaging](https://www.asiimaging.com/). To control the stage from a computer via USB, install the necessary drivers from [Silicon Labs](https://www.asiimaging.com/support/downloads/usb-support-on-ms-2000-wk-controllers/). If running Windows, the [ASI Console](https://www.asiimaging.com/support/downloads/asi-console/) can be used to flash the MS-2000 firmware as well as troubleshoot serial connection and hardware issues. For other issues, contact ASI technical support at (541) 461 8181 (Eugene, OR). Ask for Steve Saltekoff or Brandon Simpson, the main developers of the ASIStage drivers for Micro-Manager.
 
-Encoders have 10 nm resolution.
+Our stage has linear encoders with a 10nm resolution as well as lead screws with the "Ultra Coarse" pitch option.
 
 ### Firmware
-The stage firmware has been updated to include the scan module (ADEPT_XYZPF_CRISP_SL_RC). Whenever reinstalling the firmware, the default configuration will result in inaccurate stage motion. To correct this issue, run the **CCA X=18** command to set the correct lead screw thread-count per inch value. Remember to subsequently run the **RESET** command for the configuration to update.
+The stage firmware has been updated to include the CRISP, reduced count, scan, and encoder output modules (ADEPT_XYZPF_CRISP_RC_SCAN_ENC_INT). Whenever flashing the MS-2000, the default configuration may need to be updated to reflect our hardware setup. First, query the configuration:
 
-* **ADEPT_XYZPF_CRISP_SL**                   original firmware included with stage
-* **ADEPT_XYZPF_CRISP_SL_RC**                adds scan module
-* **ADEPT_XYZPF_CRISP_SL_RC_ENC_INT_SCAN**   adds scan and encoder readout modules
+```console
+CCA X?
+```
+
+The MS-2000 should respond with the following:
+
+```console
+:A A: XY:L1Do Z:R1Do F:P5
+```
+
+If that is not the case, refer to page 51 of the manual, which explains the meaning behind each configuration flag.
+
+To change the encoder setting from rotary (R) to linear (L), power down the MS-2000 and flip dip-switch 3 to position DOWN. The configuration should automatically update to reflect these changes, but if not, execute the following command sequence:
+
+```console
+CCA X=1
+RESET
+```
+
+To set the lead screw pitch to "Ultra Coarse", execute the following sequence:
+
+```console
+CCA X=18
+RESET
+```
+
+| Firmware Version                      | Modules                                               | Comments                              |
+| ------------------------------------- | ----------------------------------------------------- | ------------------------------------- |
+| ADEPT_XYZPF_CRISP_SL                  | CRISP, solenoid lock                                  | Issues with linear encoder setting    |
+| ADEPT_XYZPF_CRISP_SL_RC               | CRISP, solenoid, reduced count                        | None                                  |
+| ADEPT_XYZPF_CRISP_SL_RC_SCAN_ENC_INT  | CRISP, solenoid, reduced count, scan, encoder output  | Conflicting modules                   |
+| ADEPT_XYZPF_CRISP_SCAN_ENC_INT        | CRISP, scan, encoder output                           | Issues with linear encoder setting    |
 
 ### Useful Serial Commands
-* **RM Y=15**   (RBMODE) enables control over all axes for sequence acquisitions
-* **SS Z**      (SAVESET) save configuration to flash memory for persistent settings
-* **SS X**      (SAVESET) reset configuration to default&mdash;must **RESET** for changes to take effect
+| Command           | Shortcut      | Description                                                                   |
+| ----------------- | --------------| ----------------------------------------------------------------------------- |
+| `RBMODE Y=15`     | `RM Y=15`     | Enable control over all axes for sequence acquisitions                        |
+| `SAVESET X`       | `SS X`        | Reset configuration to default&mdash;must `RESET` for changes to take effect  |
+| `SAVESET Z`       | `SS Z`        | Save configuration to flash memory for persistent settings                    |
 
 ### CRISP Continuous Autofocus System
 To use the CRISP module with Micro-Manager, follow the [plugin instructions from ASI](https://asiimaging.com/docs/crisp_mm_plugin).
