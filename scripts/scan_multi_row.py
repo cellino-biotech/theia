@@ -10,12 +10,12 @@ import os
 import time
 import math
 import tifffile
+import threading
 import numpy as np
 
 from asistage import MS2000
 from pypylon import pylon, genicam
 from datetime import datetime
-from threading import Thread
 
 
 # constants
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     if camera is not None:
         set_roi_zones(camera, num_zones)
 
-        record = Thread(target=record_images, args=(camera, stage, path, dirname, num_zones, total_row_acq,))
+        record = threading.Thread(target=record_images, args=(camera, stage, path, dirname, num_zones, total_row_acq,))
         record.start()
 
     scan(stage, mid_point=mid_point, scan_range=scan_range)
@@ -208,8 +208,14 @@ if __name__ == "__main__":
     with open(fname, "w") as f:
         f.write(f"Total image reconstructions: {num_zones}\n")
         f.write(f"Total overlapping FOVs: {scan_range_factor}\n")
-        f.write(f"Scan midpoint: {mid_point}\n")
-        f.write(f"Scan range: {scan_range}\n")
+        f.write(f"Scan midpoint (mm): {mid_point}\n")
+        f.write(f"Scan range (mm): {scan_range}\n")
 
         if description:
             f.write(f"Description: {description}")
+    
+    # check if acquisitions finished
+    while threading.active_count() > 1:
+        time.sleep(0.2)
+    
+    print("FINISHED")
