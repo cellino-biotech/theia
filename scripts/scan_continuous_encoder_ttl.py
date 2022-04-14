@@ -164,7 +164,7 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     start = mid_point[0] - scan_range/2 - FOV_HEIGHT_MM/2
     stop = mid_point[0] + scan_range/2 + FOV_HEIGHT_MM/2
 
-    stage.scan_x_axis(start=start, stop=stop, enc_divide=35, num_pix=num_pix)
+    stage.scan_x_axis_enc(start=start, stop=stop, num_pix=num_pix)
 
 
 if __name__ == "__main__":
