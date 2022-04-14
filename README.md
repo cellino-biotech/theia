@@ -1,14 +1,17 @@
 # Theia
 Scripts to control our image prototyping station.
 
+
 ## Table of contents
 * [Introduction](#introduction)
 * [Hardware](#hardware)
 * [Micro-Manager](#micro-manager)
 * [Useful Links](#useful-links)
 
+
 ## Introduction
 This project contains scripts to control an XYZF ASI stage, CRISP autofocus module, and Basler camera.
+
 
 ## Hardware
 ### ASIStage
@@ -51,6 +54,13 @@ RESET
 | ADEPT_XYZPF_CRISP_SL_RC               | CRISP, solenoid, reduced count                        | None                                  |
 | ADEPT_XYZPF_CRISP_SL_RC_SCAN_ENC_INT  | CRISP, solenoid, reduced count, scan, encoder output  | Conflicting modules                   |
 | ADEPT_XYZPF_CRISP_SCAN_ENC_INT        | CRISP, scan, encoder output                           | Issues with linear encoder setting    |
+| ADEPT_XYZPF_CRISP_RC_SCAN_ENC_INT     | CRISP, reduced count, scan, encoder output            | Correct firmware assembly             |
+
+To query the firmware modules:
+
+```console
+BU X?
+```
 
 ### Useful Serial Commands
 | Command           | Shortcut      | Description                                                                   |
@@ -62,6 +72,17 @@ RESET
 ### CRISP Continuous Autofocus System
 To use the CRISP module with Micro-Manager, follow the [plugin instructions from ASI](https://asiimaging.com/docs/crisp_mm_plugin).
 
+### Basler camera
+| I/O                               | Line    | Pin   | Wire     |
+| --------------------------------- | ------- | ----- | -------- |
+| Opto-isolated I/O IN              | Line1   | 2     | Pink     |
+| Opto-isolated I/O OUT             | Line2   | 4     | Yellow   |
+| Direct-coupled GPIO               | Line3   | 1     | Brown    |
+| Direct-coupled GPIO               | Line4   | 3     | Green    |
+| Ground for opto-isolated I/O      | -       | 5     | Gray     |
+| Ground for direct-coupled GPIO    | -       | 6     | White    |
+
+
 ## Micro-Manager
 After [installing Micro-Manager](https://micro-manager.org/Download_Micro-Manager_Latest_Release), follow the [configuration guide](https://micro-manager.org/Micro-Manager_Configuration_Guide) to create a config file for the specific hardware. Users are directed to the [ASIStage page](https://micro-manager.org/ASIStage) of the Micro-Manager documentation for further information.
 
@@ -69,6 +90,7 @@ After [installing Micro-Manager](https://micro-manager.org/Download_Micro-Manage
 Micro-Manager software configurations are managed through a device property browser (Devices/Device Property Browser...). On the lefthand side of the browser window, the user can toggle the view of properties based on the device. Notably, one of these properties enables sequence triggering (TTL) of the ASI piezo z-axis. (More information on Micro-Manager hardware triggering can be found on the [documentation](https://micro-manager.org/Hardware-based_Synchronization_in_Micro-Manager).) Depending on the firmware version, this method limits z-stack acquisitions to 50 slices, a limitation imposed by the buffer size.
 
 * **BaslerCamera-PixelType:** set image acquisiiton to 8-bit (Mono8) or 16-bit (Mono12)
+
 
 ## Useful Links
 Tutorials, manuals, datasheets, and parts...
