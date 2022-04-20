@@ -1,10 +1,11 @@
 # Theia
-Scripts to control our image prototyping station.
+Scripts to control the image prototyping station.
 
 
 ## Table of contents
 * [Introduction](#introduction)
-* [Hardware](#hardware)
+* [ASI Stage](#asi-stage)
+* [Basler Camera](#basler-camera)
 * [Micro-Manager](#micro-manager)
 * [Useful Links](#useful-links)
 
@@ -13,14 +14,13 @@ Scripts to control our image prototyping station.
 This project contains scripts to control an XYZF ASI stage, CRISP autofocus module, and Basler camera.
 
 
-## Hardware
-### ASIStage
-General information about the ASIStage and hardware subsystems can be found at [ASIImaging](https://www.asiimaging.com/). To control the stage from a computer via USB, install the necessary drivers from [Silicon Labs](https://www.asiimaging.com/support/downloads/usb-support-on-ms-2000-wk-controllers/). If running Windows, the [ASI Console](https://www.asiimaging.com/support/downloads/asi-console/) can be used to flash the MS-2000 firmware as well as troubleshoot serial connection and hardware issues. For other issues, contact ASI technical support at (541) 461 8181 (Eugene, OR). Ask for Steve Saltekoff or Brandon Simpson, the main developers of the ASIStage drivers for Micro-Manager.
+## ASI Stage
+General information about the ASI Stage and hardware subsystems can be found at [ASIImaging](https://www.asiimaging.com/). To control the stage from a computer through USB, install the necessary drivers from [Silicon Labs](https://www.asiimaging.com/support/downloads/usb-support-on-ms-2000-wk-controllers/). If running Windows, the [ASI Console](https://www.asiimaging.com/support/downloads/asi-console/) can be used to flash the MS-2000 firmware as well as troubleshoot serial connection and hardware bugs. For other issues, contact ASI technical support at (541) 461 8181 (Eugene, OR). Request Steve Saltekoff or Brandon Simpson, the main developers of the ASI drivers for Micro-Manager.
 
-Our stage has linear encoders with a 10nm resolution as well as lead screws with the "Ultra Coarse" pitch option.
+**Note:** our stage setup has linear encoders with 10nm resolution and lead screws with the "Ultra Coarse" pitch designation.
 
 ### Firmware
-The stage firmware has been updated to include the CRISP, reduced count, scan, and encoder output modules (ADEPT_XYZPF_CRISP_RC_SCAN_ENC_INT). Whenever flashing the MS-2000, the default configuration may need to be updated to reflect our hardware setup. First, query the configuration:
+The stage firmware has been updated to include the CRISP, reduced count, scan, and encoder output modules (ADEPT_XYZPF_CRISP_RC_SCAN_ENC_INT). Whenever flashing the MS-2000, the default configuration may need to be modified to reflect our hardware setup. First, query the configuration:
 
 ```console
 CCA X?
@@ -32,7 +32,7 @@ The MS-2000 should respond with the following:
 :A A: XY:L1Do Z:R1Do F:P5
 ```
 
-If that is not the case, refer to page 51 of the manual, which explains the meaning behind each configuration flag.
+If that is not the case, refer to page 51 of the manual (see links below), which explains the meaning behind each configuration flag.
 
 To change the encoder setting from rotary (R) to linear (L), power down the MS-2000 and flip dip-switch 3 to position DOWN. The configuration should automatically update to reflect these changes, but if not, execute the following command sequence:
 
@@ -48,6 +48,8 @@ CCA X=18
 RESET
 ```
 
+All previous firmware versions have been included in this repository for reference, though only the **ADEPT_XYZPF_CRISP_SL_RC** and **ADEPT_XYZPF_CRISP_RC_SCAN_ENC_INT** are usable&mdash;this is because the other versions either have conflicting modules or are missing the "reduced count" module, which is needed for the linear encoders.
+
 | Firmware Version                      | Modules                                               | Comments                              |
 | ------------------------------------- | ----------------------------------------------------- | ------------------------------------- |
 | ADEPT_XYZPF_CRISP_SL                  | CRISP, solenoid lock                                  | Issues with linear encoder setting    |
@@ -56,7 +58,7 @@ RESET
 | ADEPT_XYZPF_CRISP_SCAN_ENC_INT        | CRISP, scan, encoder output                           | Issues with linear encoder setting    |
 | ADEPT_XYZPF_CRISP_RC_SCAN_ENC_INT     | CRISP, reduced count, scan, encoder output            | Correct firmware assembly             |
 
-To query the firmware modules:
+To query the installed firmware modules:
 
 ```console
 BU X?
@@ -72,24 +74,30 @@ BU X?
 ### CRISP Continuous Autofocus System
 To use the CRISP module with Micro-Manager, follow the [plugin instructions from ASI](https://asiimaging.com/docs/crisp_mm_plugin).
 
-### Basler camera
-| I/O                               | Line    | Pin   | Wire     |
+## Basler Camera
+
+### IO Connections/Pinout
+| IO                                | Line    | Pin   | Wire     |
 | --------------------------------- | ------- | ----- | -------- |
-| Opto-isolated I/O IN              | Line1   | 2     | Pink     |
-| Opto-isolated I/O OUT             | Line2   | 4     | Yellow   |
+| Opto-isolated IO IN               | Line1   | 2     | Pink     |
+| Opto-isolated IO OUT              | Line2   | 4     | Yellow   |
 | Direct-coupled GPIO               | Line3   | 1     | Brown    |
 | Direct-coupled GPIO               | Line4   | 3     | Green    |
-| Ground for opto-isolated I/O      | -       | 5     | Gray     |
+| Ground for opto-isolated IO       | -       | 5     | Gray     |
 | Ground for direct-coupled GPIO    | -       | 6     | White    |
 
 
 ## Micro-Manager
-After [installing Micro-Manager](https://micro-manager.org/Download_Micro-Manager_Latest_Release), follow the [configuration guide](https://micro-manager.org/Micro-Manager_Configuration_Guide) to create a config file for the specific hardware. Users are directed to the [ASIStage page](https://micro-manager.org/ASIStage) of the Micro-Manager documentation for further information.
+To use Micro-Manager, install the latest 2.0 release from the [nightly builds](https://download.micro-manager.org/nightly/2.0/Windows/). Follow the [configuration guide](https://micro-manager.org/Micro-Manager_Configuration_Guide) to create a config file for the specific hardware. Users are directed to the [ASIStage page](https://micro-manager.org/ASIStage) of the Micro-Manager documentation for further information.
 
 ### Device Property Browser
-Micro-Manager software configurations are managed through a device property browser (Devices/Device Property Browser...). On the lefthand side of the browser window, the user can toggle the view of properties based on the device. Notably, one of these properties enables sequence triggering (TTL) of the ASI piezo z-axis. (More information on Micro-Manager hardware triggering can be found on the [documentation](https://micro-manager.org/Hardware-based_Synchronization_in_Micro-Manager).) Depending on the firmware version, this method limits z-stack acquisitions to 50 slices, a limitation imposed by the buffer size.
+Micro-Manager software configurations are managed through a device property browser (Devices/Device Property Browser...). On the lefthand side of the browser window, the user can toggle the view of properties based on the device. Notably, one of these properties enables sequence triggering (TTL) of the ASI focus axis, which can be either the linear Z or piezo F. (More information on Micro-Manager hardware triggering can be found in the [documentation](https://micro-manager.org/Hardware-based_Synchronization_in_Micro-Manager).) Depending on the firmware version, this method restricts z-stack acquisitions to 50 slices, a limitation imposed by the buffer size.
 
-* **BaslerCamera-PixelType:** set image acquisiiton to 8-bit (Mono8) or 16-bit (Mono12)
+| Property                          | Purpose                                                       |
+| --------------------------------- | --------------------------------------------------------------|
+| BaslerCamera-PixelType            | Set image acquisiiton to 8-bit (Mono8) or 16-bit (Mono12)     |
+| ZStage-Use Sequence               | "Yes" prepares the stage focus axis for hardware triggering   |
+| Core-Focus                        | Set the focus axis to linear Z (ZStage) or piezo F (FStage)   | 
 
 
 ## Useful Links
