@@ -5,3 +5,4 @@ pypylon
 pyserial
 scikit-image
 tifffile
+nidaqmx

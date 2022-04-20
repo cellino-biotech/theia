@@ -9,9 +9,9 @@ import os
 import math
 import platform
 
-from asistage import MS2000
 from pypylon import pylon
 from pypylon import genicam
+from asi.asistage import MS2000
 
 
 def config_stage(stage: object, zstack_range_um: int, num_zslices: int):
@@ -59,9 +59,7 @@ def config_camera():
         camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         camera.Open()
 
-        camera.TriggerMode.SetValue("On")
-        camera.TriggerSelector.SetValue("FrameStart")
-
+        # configure output signal on dedicated opto-isolated output line
         camera.LineSelector.SetValue("Line2")
         camera.LineSource.SetValue("ExposureActive")
         camera.LineMinimumOutputPulseWidth.SetValue(100.0) # signal pulse width [us]
@@ -70,41 +68,43 @@ def config_camera():
     except genicam.GenericException:
         raise
 
-def sequence(camera: object, num_zslices: int):
+def sequence(camera: object, num_zslices: int = 20):
     try:
+        # create image window
         # image_window = pylon.PylonImageWindow()
         # image_window.Create(1)
 
+        # create image instance to store data
         img = pylon.PylonImage()
         tlf = pylon.TlFactory.GetInstance()
 
-        numberOfImagesToGrab = num_zslices
-        camera.StartGrabbingMax(numberOfImagesToGrab, pylon.GrabStrategy_LatestImageOnly)
+        camera.StartGrabbingMax(num_zslices, pylon.GrabStrategy_LatestImageOnly)
+
+        img_counter = 0
 
         while camera.IsGrabbing():
+            # set timeout to 5000 ms
             grabResult = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
 
             if grabResult.GrabSucceeded():
                 # image_window.SetImage(grabResult)
                 # image_window.Show()
                 img.AttachGrabResultBuffer(grabResult)
+
+                filename = f"img_{img_counter}"
+
+                # save image to file
+                if platform.system() == 'Windows':
+                    ipo = pylon.ImagePersistenceOptions()
+                    quality = 90
+                    ipo.SetQuality(quality)
+                    img.Save(pylon.ImageFileFormat_Jpeg, filename, ipo)
+                else:
+                    img.Save(pylon.ImageFileFormat_Png, filename)
+                
+                img_counter += 1
             else:
                 print(grabResult.ErrorCode)
-
-            if platform.system() == 'Windows':
-                ipo = pylon.ImagePersistenceOptions()
-                quality = 90
-                ipo.SetQuality(quality)
-
-                filename = "saved_pypylon_img_%d.jpeg" % quality
-                while os.path.exists(filename):
-                    filename = filename.split(".")[0] + "x" + ".jpeg"
-                img.Save(pylon.ImageFileFormat_Jpeg, filename, ipo)
-            else:
-                filename = "saved_pypylon_img_%d.png"
-                while os.path.exists(filename):
-                    filename = filename.split(".")[0] + "x" + ".jpeg"
-                img.Save(pylon.ImageFileFormat_Png, filename)
 
             grabResult.Release()
             img.Release()
@@ -124,4 +124,4 @@ if __name__ == "__main__":
 
     camera = config_camera()
 
-    sequence(camera, )
+    sequence(camera, 10)

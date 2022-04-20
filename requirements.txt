@@ -26,10 +26,13 @@ mypy-extensions==0.4.3
     # via black
 networkx==2.7.1
     # via scikit-image
+nidaqmx==0.6.1
+    # via -r requirements.in
 numpy==1.22.3
     # via
     #   dask
     #   imageio
+    #   nidaqmx
     #   pycromanager
     #   pywavelets
     #   scikit-image
@@ -68,6 +71,8 @@ scikit-image==0.19.2
     # via -r requirements.in
 scipy==1.8.0
     # via scikit-image
+six==1.16.0
+    # via nidaqmx
 tifffile==2022.3.25
     # via
     #   -r requirements.in

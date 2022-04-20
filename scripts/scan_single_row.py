@@ -13,11 +13,11 @@ import time
 import platform
 import numpy as np
 
-from asistage import MS2000
 from pypylon import pylon, genicam
 from datetime import datetime
 from threading import Thread
 from PIL import Image
+from asi.asistage import MS2000
 
 
 def camera_setup():
@@ -106,9 +106,6 @@ def record_images(camera: object, stage: object, path: str, num_images: int = 0,
         print("FINISHED")
 
 def scan(stage: object, start: float, stop: float, vel: float = 0.1):
-    # reposition stage axes
-    # stage.move(x=0, y=0, z=0, f=0)
-
     # set TTL output to pulse at constant velocity x-axis movement
     stage.ttl(y=3)
 

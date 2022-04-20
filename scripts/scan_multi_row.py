@@ -13,9 +13,9 @@ import tifffile
 import threading
 import numpy as np
 
-from asistage import MS2000
 from pypylon import pylon, genicam
 from datetime import datetime
+from asi.asistage import MS2000
 
 
 # constants
@@ -162,11 +162,6 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
         # print("FINISHED")
 
 def scan(stage: object, mid_point: tuple, scan_range: float):
-    # first move to mid-point
-    # stage.set_speed(x=1, y=1)
-    # stage.move(x=mid_point[0], y=mid_point[1])
-    # stage.wait_for_device()
-
     vel = PIX_SIZE_MM * FPS_MAX
 
     stage.set_speed(x=vel, y=vel)
