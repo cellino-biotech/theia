@@ -3,22 +3,23 @@
 # ===============================================================================
 
 import os
-import time
 import math
 import tifffile
-import threading
 import numpy as np
 
 from pypylon import pylon, genicam
 from datetime import datetime
 from asi.asistage import MS2000
 
+import nidaqmx
+from nidaqmx.constants import (AcquisitionType, CountDirection, Edge, READ_ALL_AVAILABLE, TaskMode, TriggerType)
+
 
 # explicit constants
 SENSOR_WIDTH_PIX  = 2064
 SENSOR_HEIGHT_PIX = 1544
 PIX_SIZE_MM       = 0.35E-3 # determined from ImageJ
-EXPOSURE_TIME_US  = 100    # given max light intensity
+EXPOSURE_TIME_US  = 100     # given max light intensity
 FPS_MAX           = 635
 
 # inferred constants
@@ -67,9 +68,6 @@ def camera_setup():
     try:
         # grab camera
         camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
-        # camera.RegisterConfiguration(
-        #     pylon.ConfigurationEventHandler(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete
-        # )
         camera.Open()
 
         camera.AcquisitionMode.SetValue('Continuous')
@@ -115,6 +113,13 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
     reconstruction = np.empty((num_zones, total_row_acq, SENSOR_WIDTH_PIX), np.uint16)
 
     try:
+        count_task = nidaqmx.Task()
+        channel = count_task.ci_channels.add_ci_count_edges_chan(
+            'Dev1/ctr0', initial_count=0, edge=Edge.FALLING, count_direction=CountDirection.COUNT_UP
+        )
+        channel.ci_count_edges_term = 'PFI0' #'/Dev1/20MHzTimebase'
+        count_task.start()
+        
         # use the first-in-first-out processing approach
         camera.StartGrabbingMax(total_row_acq, pylon.GrabStrategy_OneByOne)
 
@@ -124,6 +129,10 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
         while camera.IsGrabbing():
             # use timeout of 2000ms (must be greater than exposure time)
             grab_result = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+            # try to get actual position of the acquired image
+            enc_counter = count_task.read() - 1
+            if counter % 100 == 0:
+                print(f'count: {counter} enc: {enc_counter}')
 
             if grab_result.GrabSucceeded():
                 for i in range(num_zones):
@@ -138,6 +147,9 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
         print(f"Total images requested: {total_row_acq}")
         print(f"Total images recorded: {counter}")
         camera.StopGrabbing()
+
+        print(f'total encoder tick count: {count_task.read()}')
+        count_task.close()
         
         overlap_stack = []
 
@@ -151,14 +163,13 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
             overlap_stack.append(reconstruction[i, start:stop, :])
 
         # zstack = np.stack(overlap_stack, axis=0)
-        zstack = np.stack(reconstruction, axis=0)
+        zstack = np.stack(overlap_stack, axis=0)
         save_image_array(zstack, os.path.join(path, dirname + "_stack.tif"))
 
         reset_roi_zones(camera)
         
         camera.Close()
         stage.close()
-        # print("FINISHED")
 
 def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     # first move to mid-point y-value
@@ -167,8 +178,8 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     stage.wait_for_device()
 
     vel = PIX_SIZE_MM * FPS_MAX
-    vel = 0.06
-    print(f"Velocity: {vel}")
+    #vel = 0.25 #0.06
+    print(f"Velocity: {vel}mm/sec")
 
     stage.set_speed(x=vel, y=vel)
 
@@ -193,19 +204,13 @@ if __name__ == "__main__":
     scan_range = scan_range_factor * FOV_HEIGHT_MM
 
     total_row_acq = SENSOR_HEIGHT_PIX * (scan_range_factor + 2) 
-
-    if camera is not None:
-        set_roi_zones(camera, num_zones)
-
-        record = threading.Thread(
-            target=record_images, 
-            args=(camera, stage, path, dirname, num_zones, total_row_acq,)
-        )
-        record.start()
-
+    
+    set_roi_zones(camera, num_zones)
     scan(stage, mid_point=mid_point, scan_range=scan_range, num_pix=total_row_acq)
+    record_images(camera, stage, path, dirname, num_zones, total_row_acq)
 
-    description = input("Add description: ")
+    # description = input("Add description: ")
+    description = None
 
     fname = os.path.join(path, dirname + "_description.txt")
 
@@ -217,9 +222,5 @@ if __name__ == "__main__":
 
         if description:
             f.write(f"Description: {description}")
-        
-    # check if acquisitions finished
-    while threading.active_count() > 1:
-        time.sleep(0.2)
     
     print("FINISHED")
