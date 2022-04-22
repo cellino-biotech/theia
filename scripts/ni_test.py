@@ -11,9 +11,11 @@ with nidaqmx.Task() as di_task:
 """
 
 with nidaqmx.Task() as ci_task:
-    channel = ci_task.ci_channels.add_ci_count_edges_chan('Dev1/ctr0',
-        initial_count=0, edge=Edge.FALLING, count_direction=CountDirection.COUNT_UP)
-    channel.ci_count_edges_term = 'PFI0' #'/Dev1/20MHzTimebase'
+    #channel = ci_task.ci_channels.add_ci_count_edges_chan('Dev1/ctr0',
+    #    initial_count=0, edge=Edge.FALLING, count_direction=CountDirection.COUNT_UP)
+    channel = ci_task.ci_channels.add_ci_period_chan('Dev1/ctr0',
+        edge=Edge.FALLING)
+    channel.ci_period_term = 'PFI0' #'/Dev1/20MHzTimebase'
     
     # TODO: attempt to get gated counts... somehow not working
     #channel.ci_count_edges_gate_term = '/Dev1/PFI9'
