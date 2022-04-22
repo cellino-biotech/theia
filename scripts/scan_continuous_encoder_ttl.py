@@ -7,6 +7,7 @@ import math
 import json
 import tifffile
 import numpy as np
+import matplotlib.pyplot as plt
 
 from pypylon import pylon, genicam
 from datetime import datetime
@@ -114,12 +115,14 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
     reconstruction = np.empty((num_zones, total_row_acq, SENSOR_WIDTH_PIX), np.uint16)
 
     try:
-        count_task = nidaqmx.Task()
-        channel = count_task.ci_channels.add_ci_count_edges_chan(
-            'Dev1/ctr0', initial_count=0, edge=Edge.FALLING, count_direction=CountDirection.COUNT_UP
-        )
-        channel.ci_count_edges_term = 'PFI0' #'/Dev1/20MHzTimebase'
-        count_task.start()
+        ci_task = nidaqmx.Task()
+        channel = ci_task.ci_channels.add_ci_count_edges_chan('Dev1/ctr0',
+            initial_count=0, edge=Edge.FALLING, count_direction=CountDirection.COUNT_UP)
+        channel.ci_count_edges_term = '/Dev1/20MHzTimebase'# 'PFI0'
+
+        ci_task.timing.cfg_samp_clk_timing(rate=100000, source='PFI0', active_edge=Edge.FALLING,
+            sample_mode=AcquisitionType.FINITE, samps_per_chan=1000)
+        ci_task.start()
         
         # use the first-in-first-out processing approach
         camera.StartGrabbingMax(total_row_acq, pylon.GrabStrategy_OneByOne)
@@ -130,9 +133,6 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
             # use timeout of 2000ms (must be greater than exposure time)
             grab_result = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
             # try to get actual position of the acquired image
-            enc_counter = count_task.read() - 1
-            if counter % 100 == 0:
-                print(f'count: {counter} enc: {enc_counter}')
 
             if grab_result.GrabSucceeded():
                 for i in range(num_zones):
@@ -148,8 +148,14 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
         print(f"total images recorded: {counter}")
         camera.StopGrabbing()
 
-        print(f'total encoder tick count: {count_task.read()}')
-        count_task.close()
+        counts = np.array(ci_task.read(number_of_samples_per_channel=1000))
+        deltas = 1000*((counts[1:]-counts[:-1])/2.0E7)
+        plt.hist(deltas, bins=50)
+        plt.xlabel('encoder period (msec)')
+        plt.title(f'mean = {np.mean(deltas):0.1f}, sd={np.std(deltas):0.1f}, min={np.min(deltas):0.1f}, max={np.max(deltas):0.1f}')
+        plt.show()
+        #print(f'pulse widths (msec): {deltas}')
+        ci_task.close()
 
         layer_adjustments = {}
         
