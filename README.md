@@ -6,6 +6,7 @@ Scripts to control the image prototyping station.
 * [Introduction](#introduction)
 * [ASI Stage](#asi-stage)
 * [Basler Camera](#basler-camera)
+* [Adafruit MatrixPortal](#adafruit-matrixportal)
 * [Micro-Manager](#micro-manager)
 * [Useful Links](#useful-links)
 
@@ -87,6 +88,10 @@ To use the CRISP module with Micro-Manager, follow the [plugin instructions from
 | Ground for direct-coupled GPIO    | -       | 6     | White    |
 
 
+## Adafruit MatrixPortal
+The [MatrixPortal M4](https://learn.adafruit.com/adafruit-matrixportal-m4/overview) is a microcontroller board with WiFi connectivity that is designed to operate [LED matrix panels](https://learn.adafruit.com/rgb-led-matrices-matrix-panels-with-circuitpython/overview) using a CircuitPython library called [displayio](https://learn.adafruit.com/circuitpython-display-support-using-displayio/introduction). 
+
+
 ## Micro-Manager
 To use Micro-Manager, install the latest 2.0 release from the [nightly builds](https://download.micro-manager.org/nightly/2.0/Windows/). Follow the [configuration guide](https://micro-manager.org/Micro-Manager_Configuration_Guide) to create a config file for the specific hardware. Users are directed to the [ASIStage page](https://micro-manager.org/ASIStage) of the Micro-Manager documentation for further information.
 
@@ -103,15 +108,21 @@ Micro-Manager software configurations are managed through a device property brow
 ## Useful Links
 Tutorials, manuals, datasheets, and parts...
 
+#### ASI
 * [MS-2000 XY Piezo Stage Manual](https://www.asiimaging.com/downloads/manuals/ASI-PZ-WK-Inverted-XY.pdf)
 * [MS-2000 Operation](https://asiimaging.com/docs/ms2000_operation)
 * [MS-2000 Serial Communication Setup](https://www.asiimaging.com/docs/tech_note_rs232_comm)
 * [ASI CRISP Manual](https://www.asiimaging.com/downloads/manuals/CRISP%20Autofocus%20Manual.pdf)
 * [ASI Python Quick Start](https://asiimaging.com/docs/python)
 * [ASI Serial Commands Quick Start](https://www.asiimaging.com/docs/command_quick_start)
+
+#### Basler
 * [Basler Ace User Manual](https://graftek.biz/system/files/2576/original/Basler_Ace_USB_3.0_Manual.pdf?1479057814)
 * [Blog: Getting Started With Basler Cameras](https://www.pythonforthelab.com/blog/getting-started-with-basler-cameras/)
 * [Basler Pylon SDK Manual](https://www.baslerweb.com/fp-1615186793/media/downloads/documents/users_manuals/AW00148804000_pylon_SDK_Samples_Manual.pdf)
 * [Basler Pylon SDK Webinar](https://www.baslerweb.com/en/company/news-press/webinar/pylonc/vod-pylonc/)
 * [Basler Pylon Python Examples](https://github.com/basler/pypylon/tree/master/samples)
 * [Basler I/O Connector Cable](https://www.mouser.com/ProductDetail/405-2200000625)
+
+#### Adafruit
+* [Adafruit MatrixPortal Library](https://docs.circuitpython.org/projects/matrixportal/en/latest/)
