@@ -243,6 +243,131 @@ def record_images(
         return layer_adjustments
 
 
+def scan_record_images(
+    mid_point: tuple,
+    scan_range: float,
+    num_pix: int,
+    camera: object,
+    stage: object,
+    path: str,
+    dirname: str,
+    num_zones: int = 3,
+    total_row_acq: int = 1544,
+):
+
+    # initialize data array
+    reconstruction = np.empty((num_zones, total_row_acq, SENSOR_WIDTH_PIX), np.uint16)
+
+    total_ticks = total_row_acq  # * 2
+
+    try:
+        ci_task = nidaqmx.Task()
+        channel = ci_task.ci_channels.add_ci_count_edges_chan(
+            "Dev1/ctr0",
+            initial_count=0,
+            edge=Edge.FALLING,
+            count_direction=CountDirection.COUNT_UP,
+        )
+        channel.ci_count_edges_term = "PFI0"  # "PFI0"
+
+        ci_task.timing.cfg_samp_clk_timing(
+            rate=50000,
+            source="PFI1",
+            active_edge=Edge.RISING,
+            sample_mode=AcquisitionType.FINITE,
+            samps_per_chan=total_ticks,
+        )
+
+        ci_task.in_stream.input_buf_size = total_ticks  # should there be more?
+        reader = CounterReader(ci_task.in_stream)
+        reader.read_all_avail_samp = True
+        ci_task.start()
+
+        # use the first-in-first-out processing approach
+        camera.StartGrabbingMax(total_row_acq, pylon.GrabStrategy_OneByOne)
+
+        scan(stage, mid_point=mid_point, scan_range=scan_range, num_pix=total_row_acq)
+
+        counter = 0
+
+        while camera.IsGrabbing():
+            # use timeout of 2000ms (must be greater than exposure time)
+            grab_result = camera.RetrieveResult(
+                5000, pylon.TimeoutHandling_ThrowException
+            )
+            # try to get actual position of the acquired image
+
+            if grab_result.GrabSucceeded():
+                for i in range(num_zones):
+                    reconstruction[i][counter] = grab_result.Array[i * 4].reshape(
+                        (1, 2064)
+                    )
+                counter += 1
+            else:
+                print("Error: ", grab_result.ErrorCode, grab_result.ErrorDescription)
+            grab_result.Release()
+    except genicam.GenericException as e:
+        print(e)
+    finally:
+        print(f"total images requested: {total_row_acq}")
+        print(f"total images recorded: {counter}")
+        camera.StopGrabbing()
+
+        count_array = np.zeros(total_row_acq, dtype=np.uint32)
+        reader.read_many_sample_uint32(
+            count_array, number_of_samples_per_channel=total_row_acq, timeout=0.1
+        )
+        plt.plot(count_array)
+        plt.grid()
+        plt.show()
+        # counts = np.array(ci_task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,timeout=1.0))
+        # deltas = (counts[1:]-counts[:-1])
+        deltas = count_array[1:] - count_array[:-1]
+        plt.plot([0, total_row_acq], [0, total_row_acq], "r--")
+        plt.plot(deltas, "k", alpha=0.5)
+        plt.plot(count_array)
+        plt.grid()
+        plt.title("Skipped frames")
+        plt.xlabel("Encoder ticks")
+        plt.ylabel("Images captured")
+        plt.show()
+        # print(f'pulse widths (msec): {deltas}')
+        ci_task.stop()
+        ci_task.close()
+
+        layer_adjustments = {}
+
+        overlap = []
+
+        for i in range(num_zones):
+            camera.ROIZoneSelector.SetValue(f"Zone{i}")
+            offset = camera.ROIZoneOffset.GetValue()
+
+            start = SENSOR_HEIGHT_PIX - offset
+            stop = total_row_acq - (SENSOR_HEIGHT_PIX - start)
+
+            overlap.append(reconstruction[i, start:stop, :])
+
+            layer_adjustments[f"{i}"] = {"offset": offset, "start": start, "stop": stop}
+
+        save_image_array(
+            np.stack(reconstruction, axis=0), os.path.join(path, dirname + "_raw.tif")
+        )
+        save_image_array(
+            np.stack(overlap, axis=0), os.path.join(path, dirname + "_overlap.tif")
+        )
+
+        reset_roi_zones(camera)
+
+        # deactivate triggering
+        camera.TriggerMode.SetValue("Off")
+
+        camera.Close()
+        stage.close()
+
+        return layer_adjustments
+
+
 def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     # first move to mid-point y-value
     stage.set_speed(x=1, y=1)
@@ -250,7 +375,8 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     stage.wait_for_device()
 
     vel = PIX_SIZE_MM * FPS_MAX
-    vel = 0.4
+    vel = 0.5
+    # vel = 0.75
     print(f"Velocity: {vel}mm/sec")
 
     stage.set_speed(x=vel, y=vel)
@@ -277,9 +403,16 @@ if __name__ == "__main__":
     total_row_acq = SENSOR_HEIGHT_PIX * (scan_range_factor + 1)
 
     set_roi_zones(camera, num_zones)
-    scan(stage, mid_point=mid_point, scan_range=scan_range, num_pix=total_row_acq)
-    layer_adjustments = record_images(
-        camera, stage, path, dirname, num_zones, total_row_acq
+    layer_adjustments = scan_record_images(
+        mid_point,
+        scan_range,
+        total_row_acq,
+        camera,
+        stage,
+        path,
+        dirname,
+        num_zones,
+        total_row_acq,
     )
 
     params = {
