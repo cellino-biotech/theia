@@ -5,8 +5,8 @@
 import os
 import math
 import json
-import tifffile
 import numpy as np
+import tifffile as tf
 import matplotlib.pyplot as plt
 
 from pypylon import pylon, genicam
@@ -15,18 +15,26 @@ from asi.asistage import MS2000
 
 import nidaqmx
 from nidaqmx.stream_readers import CounterReader
-from nidaqmx.constants import (AcquisitionType, CountDirection, Edge, READ_ALL_AVAILABLE, TaskMode, TriggerType)
+from nidaqmx.constants import (
+    AcquisitionType,
+    CountDirection,
+    Edge,
+    READ_ALL_AVAILABLE,
+    TaskMode,
+    TriggerType,
+)
 
 
 # explicit constants
-SENSOR_WIDTH_PIX  = 2064
+SENSOR_WIDTH_PIX = 2064
 SENSOR_HEIGHT_PIX = 1544
-PIX_SIZE_MM       = 0.35E-3 # determined from ImageJ
-EXPOSURE_TIME_US  = 50     # given max light intensity
-FPS_MAX           = 635
+PIX_SIZE_MM = 0.35e-3  # determined from ImageJ
+EXPOSURE_TIME_US = 50  # given max light intensity
+FPS_MAX = 635
 
 # inferred constants
 FOV_HEIGHT_MM = SENSOR_HEIGHT_PIX * PIX_SIZE_MM
+
 
 def create_data_dir():
     now = datetime.now()
@@ -35,21 +43,23 @@ def create_data_dir():
     os.mkdir(path)
     return (path, dirname)
 
+
 def reset_roi_zones(camera: object):
     if genicam.IsWritable(camera.ROIZoneMode):
         for i in range(8):
             camera.ROIZoneSelector.SetValue(f"Zone{i}")
             camera.ROIZoneMode.SetValue("Off")
-    
+
     if genicam.IsWritable(camera.OffsetY):
         # reset camera to full FOV
         camera.OffsetY.SetValue(0)
         camera.Height = camera.Height.Max
 
+
 def set_roi_zones(camera: object, num_zones: int = 3):
     reset_roi_zones(camera)
 
-    zone_spacing = math.trunc((SENSOR_HEIGHT_PIX-4) / (num_zones-1))
+    zone_spacing = math.trunc((SENSOR_HEIGHT_PIX - 4) / (num_zones - 1))
     zone_offset = 0
 
     for i in range(num_zones):
@@ -67,13 +77,14 @@ def set_roi_zones(camera: object, num_zones: int = 3):
 
         zone_offset += zone_spacing
 
+
 def camera_setup():
     try:
         # grab camera
         camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
         camera.Open()
 
-        camera.AcquisitionMode.SetValue('Continuous')
+        camera.AcquisitionMode.SetValue("Continuous")
 
         # Mono12p adds padding zeros to data bytes
         camera.PixelFormat = "Mono12p"
@@ -102,6 +113,7 @@ def camera_setup():
             print("Exception: ", e)
         return None
 
+
 def save_image_array(img_array: object, filename: str):
     # add an empty color channel
     img_array = np.expand_dims(img_array, axis=0)
@@ -109,9 +121,17 @@ def save_image_array(img_array: object, filename: str):
     # rearrange data for multidimensional tiff standard
     img_array = np.transpose(img_array, axes=[1, 0, 2, 3])
 
-    tifffile.imwrite(filename, img_array, imagej=True)
+    tf.imwrite(filename, img_array, imagej=True)
 
-def record_images(camera: object, stage: object, path: str, dirname: str, num_zones: int = 3, total_row_acq: int = 1544):
+
+def record_images(
+    camera: object,
+    stage: object,
+    path: str,
+    dirname: str,
+    num_zones: int = 3,
+    total_row_acq: int = 1544,
+):
     # initialize data array
     reconstruction = np.empty((num_zones, total_row_acq, SENSOR_WIDTH_PIX), np.uint16)
 
@@ -119,18 +139,27 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
 
     try:
         ci_task = nidaqmx.Task()
-        channel = ci_task.ci_channels.add_ci_count_edges_chan('Dev1/ctr0',
-            initial_count=0, edge=Edge.FALLING, count_direction=CountDirection.COUNT_UP)
-        channel.ci_count_edges_term = 'PFI1'# 'PFI0'
+        channel = ci_task.ci_channels.add_ci_count_edges_chan(
+            "Dev1/ctr0",
+            initial_count=0,
+            edge=Edge.FALLING,
+            count_direction=CountDirection.COUNT_UP,
+        )
+        channel.ci_count_edges_term = "PFI1"  # 'PFI0'
 
-        ci_task.timing.cfg_samp_clk_timing(rate=500000, source='PFI0', active_edge=Edge.FALLING,
-            sample_mode=AcquisitionType.FINITE, samps_per_chan=total_ticks)
+        ci_task.timing.cfg_samp_clk_timing(
+            rate=500000,
+            source="PFI0",
+            active_edge=Edge.FALLING,
+            sample_mode=AcquisitionType.FINITE,
+            samps_per_chan=total_ticks,
+        )
 
         ci_task.in_stream.input_buf_size = total_ticks  # should there be more?
         reader = CounterReader(ci_task.in_stream)
         reader.read_all_avail_samp = True
         ci_task.start()
-        
+
         # use the first-in-first-out processing approach
         camera.StartGrabbingMax(total_row_acq, pylon.GrabStrategy_OneByOne)
 
@@ -138,12 +167,16 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
 
         while camera.IsGrabbing():
             # use timeout of 2000ms (must be greater than exposure time)
-            grab_result = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+            grab_result = camera.RetrieveResult(
+                5000, pylon.TimeoutHandling_ThrowException
+            )
             # try to get actual position of the acquired image
 
             if grab_result.GrabSucceeded():
                 for i in range(num_zones):
-                    reconstruction[i][counter] = grab_result.Array[i*4].reshape((1, 2064))
+                    reconstruction[i][counter] = grab_result.Array[i * 4].reshape(
+                        (1, 2064)
+                    )
                 counter += 1
             else:
                 print("Error: ", grab_result.ErrorCode, grab_result.ErrorDescription)
@@ -156,25 +189,26 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
         camera.StopGrabbing()
 
         count_array = np.zeros(total_row_acq, dtype=np.uint32)
-        reader.read_many_sample_uint32(count_array,
-            number_of_samples_per_channel=total_row_acq, timeout=0.1)
-        #counts = np.array(ci_task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,timeout=1.0))
-        #deltas = (counts[1:]-counts[:-1])
+        reader.read_many_sample_uint32(
+            count_array, number_of_samples_per_channel=total_row_acq, timeout=0.1
+        )
+        # counts = np.array(ci_task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,timeout=1.0))
+        # deltas = (counts[1:]-counts[:-1])
         deltas = total_row_acq * (count_array[1:] - count_array[:-1] > 0)
-        plt.plot([0,total_row_acq],[0, total_row_acq], 'r--')
-        plt.plot(deltas, 'k', alpha=0.3)
+        plt.plot([0, total_row_acq], [0, total_row_acq], "r--")
+        plt.plot(deltas, "k", alpha=0.3)
         plt.plot(count_array)
         plt.grid()
-        plt.title('Skipped frames')
-        plt.xlabel('Encoder ticks')
-        plt.ylabel('Images captured')
+        plt.title("Skipped frames")
+        plt.xlabel("Encoder ticks")
+        plt.ylabel("Images captured")
         plt.show()
-        #print(f'pulse widths (msec): {deltas}')
+        # print(f'pulse widths (msec): {deltas}')
         ci_task.stop()
         ci_task.close()
 
         layer_adjustments = {}
-        
+
         overlap = []
 
         for i in range(num_zones):
@@ -186,24 +220,25 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
 
             overlap.append(reconstruction[i, start:stop, :])
 
-            layer_adjustments[f"{i}"] = {
-                "offset": offset, 
-                "start": start,
-                "stop": stop
-            }
-        
-        save_image_array(np.stack(reconstruction, axis=0), os.path.join(path, dirname + "_raw.tif"))
-        save_image_array(np.stack(overlap, axis=0), os.path.join(path, dirname + "_overlap.tif"))
+            layer_adjustments[f"{i}"] = {"offset": offset, "start": start, "stop": stop}
+
+        save_image_array(
+            np.stack(reconstruction, axis=0), os.path.join(path, dirname + "_raw.tif")
+        )
+        save_image_array(
+            np.stack(overlap, axis=0), os.path.join(path, dirname + "_overlap.tif")
+        )
 
         reset_roi_zones(camera)
 
         # deactivate triggering
         camera.TriggerMode.SetValue("On")
-        
+
         camera.Close()
         stage.close()
 
         return layer_adjustments
+
 
 def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     # first move to mid-point y-value
@@ -217,7 +252,7 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
 
     stage.set_speed(x=vel, y=vel)
 
-    start = mid_point[0] - scan_range/2 - FOV_HEIGHT_MM/2
+    start = mid_point[0] - scan_range / 2 - FOV_HEIGHT_MM / 2
 
     stage.scan_x_axis_enc(start=start, num_pix=num_pix, enc_divide=38)
 
@@ -230,24 +265,26 @@ if __name__ == "__main__":
 
     camera = camera_setup()
 
-    num_zones = 5 # number of z-slices
+    num_zones = 5  # number of z-slices
     mid_point = (0, 0)
-    scan_range_factor = 1 # number of overlapping fov images
+    scan_range_factor = 1  # number of overlapping fov images
 
     scan_range = scan_range_factor * FOV_HEIGHT_MM
 
-    total_row_acq = SENSOR_HEIGHT_PIX * (scan_range_factor + 1) 
-    
+    total_row_acq = SENSOR_HEIGHT_PIX * (scan_range_factor + 1)
+
     set_roi_zones(camera, num_zones)
     scan(stage, mid_point=mid_point, scan_range=scan_range, num_pix=total_row_acq)
-    layer_adjustments = record_images(camera, stage, path, dirname, num_zones, total_row_acq)
+    layer_adjustments = record_images(
+        camera, stage, path, dirname, num_zones, total_row_acq
+    )
 
     params = {
         "total_reconstructions": num_zones,
         "total_overlap_fovs": scan_range_factor,
         "scan_midpoint": mid_point,
         "scan_range": scan_range,
-        "layer_adjustments": layer_adjustments
+        "layer_adjustments": layer_adjustments,
     }
 
     fname = os.path.join(path, dirname + "_params.json")
