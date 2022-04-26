@@ -145,12 +145,12 @@ def record_images(
             edge=Edge.FALLING,
             count_direction=CountDirection.COUNT_UP,
         )
-        channel.ci_count_edges_term = "PFI1"  # "PFI0"
+        channel.ci_count_edges_term = "PFI0"  # "PFI0"
 
         ci_task.timing.cfg_samp_clk_timing(
             rate=500000,
-            source="PFI0",
-            active_edge=Edge.FALLING,
+            source="PFI1",
+            active_edge=Edge.RISING,
             sample_mode=AcquisitionType.FINITE,
             samps_per_chan=total_ticks,
         )
@@ -192,11 +192,14 @@ def record_images(
         reader.read_many_sample_uint32(
             count_array, number_of_samples_per_channel=total_row_acq, timeout=0.1
         )
+        plt.plot(count_array)
+        plt.grid()
+        plt.show()
         # counts = np.array(ci_task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,timeout=1.0))
         # deltas = (counts[1:]-counts[:-1])
-        deltas = total_row_acq * (count_array[1:] - count_array[:-1] > 0)
+        deltas = count_array[1:] - count_array[:-1]
         plt.plot([0, total_row_acq], [0, total_row_acq], "r--")
-        plt.plot(deltas, "k", alpha=0.3)
+        plt.plot(deltas, "k", alpha=0.5)
         plt.plot(count_array)
         plt.grid()
         plt.title("Skipped frames")
@@ -247,7 +250,7 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     stage.wait_for_device()
 
     vel = PIX_SIZE_MM * FPS_MAX
-    vel = 0.7
+    vel = 0.4
     print(f"Velocity: {vel}mm/sec")
 
     stage.set_speed(x=vel, y=vel)
