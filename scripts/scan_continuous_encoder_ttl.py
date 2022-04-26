@@ -14,6 +14,7 @@ from datetime import datetime
 from asi.asistage import MS2000
 
 import nidaqmx
+from nidaqmx.stream_readers import CounterReader
 from nidaqmx.constants import (AcquisitionType, CountDirection, Edge, READ_ALL_AVAILABLE, TaskMode, TriggerType)
 
 
@@ -21,7 +22,7 @@ from nidaqmx.constants import (AcquisitionType, CountDirection, Edge, READ_ALL_A
 SENSOR_WIDTH_PIX  = 2064
 SENSOR_HEIGHT_PIX = 1544
 PIX_SIZE_MM       = 0.35E-3 # determined from ImageJ
-EXPOSURE_TIME_US  = 100     # given max light intensity
+EXPOSURE_TIME_US  = 50     # given max light intensity
 FPS_MAX           = 635
 
 # inferred constants
@@ -114,14 +115,20 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
     # initialize data array
     reconstruction = np.empty((num_zones, total_row_acq, SENSOR_WIDTH_PIX), np.uint16)
 
+    total_ticks = total_row_acq * 2
+
     try:
         ci_task = nidaqmx.Task()
         channel = ci_task.ci_channels.add_ci_count_edges_chan('Dev1/ctr0',
             initial_count=0, edge=Edge.FALLING, count_direction=CountDirection.COUNT_UP)
-        channel.ci_count_edges_term = '/Dev1/20MHzTimebase'# 'PFI0'
+        channel.ci_count_edges_term = 'PFI1'# 'PFI0'
 
-        ci_task.timing.cfg_samp_clk_timing(rate=100000, source='PFI0', active_edge=Edge.FALLING,
-            sample_mode=AcquisitionType.FINITE, samps_per_chan=1000)
+        ci_task.timing.cfg_samp_clk_timing(rate=500000, source='PFI0', active_edge=Edge.FALLING,
+            sample_mode=AcquisitionType.FINITE, samps_per_chan=total_ticks)
+
+        ci_task.in_stream.input_buf_size = total_ticks  # should there be more?
+        reader = CounterReader(ci_task.in_stream)
+        reader.read_all_avail_samp = True
         ci_task.start()
         
         # use the first-in-first-out processing approach
@@ -148,13 +155,22 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
         print(f"total images recorded: {counter}")
         camera.StopGrabbing()
 
-        counts = np.array(ci_task.read(number_of_samples_per_channel=1000))
-        deltas = 1000*((counts[1:]-counts[:-1])/2.0E7)
-        plt.hist(deltas, bins=50)
-        plt.xlabel('encoder period (msec)')
-        plt.title(f'mean = {np.mean(deltas):0.1f}, sd={np.std(deltas):0.1f}, min={np.min(deltas):0.1f}, max={np.max(deltas):0.1f}')
+        count_array = np.zeros(total_row_acq, dtype=np.uint32)
+        reader.read_many_sample_uint32(count_array,
+            number_of_samples_per_channel=total_row_acq, timeout=0.1)
+        #counts = np.array(ci_task.read(number_of_samples_per_channel=nidaqmx.constants.READ_ALL_AVAILABLE,timeout=1.0))
+        #deltas = (counts[1:]-counts[:-1])
+        deltas = total_row_acq * (count_array[1:] - count_array[:-1] > 0)
+        plt.plot([0,total_row_acq],[0, total_row_acq], 'r--')
+        plt.plot(deltas, 'k', alpha=0.3)
+        plt.plot(count_array)
+        plt.grid()
+        plt.title('Skipped frames')
+        plt.xlabel('Encoder ticks')
+        plt.ylabel('Images captured')
         plt.show()
         #print(f'pulse widths (msec): {deltas}')
+        ci_task.stop()
         ci_task.close()
 
         layer_adjustments = {}
@@ -196,7 +212,7 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     stage.wait_for_device()
 
     vel = PIX_SIZE_MM * FPS_MAX
-    vel = 0.1
+    vel = 0.9
     print(f"Velocity: {vel}mm/sec")
 
     stage.set_speed(x=vel, y=vel)
