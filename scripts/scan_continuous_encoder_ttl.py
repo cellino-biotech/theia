@@ -145,7 +145,7 @@ def record_images(
             edge=Edge.FALLING,
             count_direction=CountDirection.COUNT_UP,
         )
-        channel.ci_count_edges_term = "PFI1"  # 'PFI0'
+        channel.ci_count_edges_term = "PFI1"  # "PFI0"
 
         ci_task.timing.cfg_samp_clk_timing(
             rate=500000,
@@ -232,7 +232,7 @@ def record_images(
         reset_roi_zones(camera)
 
         # deactivate triggering
-        camera.TriggerMode.SetValue("On")
+        camera.TriggerMode.SetValue("Off")
 
         camera.Close()
         stage.close()
@@ -247,7 +247,7 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
     stage.wait_for_device()
 
     vel = PIX_SIZE_MM * FPS_MAX
-    vel = 0.9
+    vel = 0.7
     print(f"Velocity: {vel}mm/sec")
 
     stage.set_speed(x=vel, y=vel)
