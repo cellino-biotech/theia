@@ -7,7 +7,7 @@ import serial
 from serial import SerialException
 
 
-class SerialPort():
+class SerialPort:
     """Managing RS232 serial connection"""
 
     def __init__(self, port: str, baudrate: int, report: bool = True):
@@ -37,7 +37,7 @@ class SerialPort():
             self.serial_port.reset_input_buffer()
             self.serial_port.reset_output_buffer()
             print("MS-2000 connection successful")
-    
+
     @staticmethod
     def find_port(descriptor):
         ports = list(serial.tools.list_ports.comports())
@@ -50,15 +50,16 @@ class SerialPort():
         self.serial_port.reset_input_buffer()
         self.serial_port.reset_output_buffer()
 
-        command = command + '\r'
-        self.serial_port.write(command.encode()) # pass as bytearray
-    
+        command = command + "\r"
+        self.serial_port.write(command.encode())  # pass as bytearray
+
     def read_response(self, print_to_console: bool = True) -> str:
         response = self.serial_port.readline().decode("utf-8", "ignore").strip()
 
         if print_to_console:
             # B == one or more motors running   N == no motors running
-            if response != "B" and response != "N": print(f"<-- {response}")
+            if response != "B" and response != "N":
+                print(f"<-- {response}")
         return response
 
     def close(self):
@@ -68,7 +69,7 @@ class SerialPort():
 
 class MS2000(SerialPort):
     """Serial connection to MS2000 controller
-    
+
     Error codes:
         :N-1        Unknown command
         :N-2        Unrecognized axis parameter
@@ -89,28 +90,30 @@ class MS2000(SerialPort):
 
         # validate user baudrate
         if baudrate not in self.BAUDRATES:
-            raise ValueError("Invalid baudrate. Valid rates include 9600, 19200, 28800, 115200")
-        
+            raise ValueError(
+                "Invalid baudrate. Valid rates include 9600, 19200, 28800, 115200"
+            )
+
     def moverel(self, x: int = 0, y: int = 0, z: int = 0, f: int = 0):
         """Relative stage translation"""
         self.send_command(f"R X={x} Y={y} Z={z} F={f}")
         self.read_response()
-    
+
     def moverel_axis(self, axis: str, dist: int):
         "Relative translation for specific axis"
         self.send_command(f"R {axis}={dist}")
         self.read_response()
-    
+
     def move(self, x: int = 0, y: int = 0, z: int = 0, f: int = 0):
         "Absolute stage translation"
         self.send_command(f"M X={x} Y={y} Z={z} F={f}")
         self.read_response()
-    
+
     def move_axis(self, axis: str, dist: int):
         "Absolute translation for specific axis"
         self.send_command(f"M {axis}={dist}")
         self.read_response()
-    
+
     def set_speed(self, x: int = None, y: int = None, z: int = None):
         """Set motor velocity in mm/s"""
         if x and y and z:
@@ -130,27 +133,27 @@ class MS2000(SerialPort):
         else:
             return
         self.read_response()
-    
+
     def home_all(self):
         """Home all axes"""
         self.send_command("! X Y Z")
         self.read_response()
-    
+
     def home_axis(self, axis: str):
         """Home specifc axis"""
         self.send_command(f"! {axis}")
         self.read_response()
-    
+
     def load_buffer(self, x: int = 0, y: int = 0, z: int = 0):
         """Load ring buffer (max 50 positions)"""
         self.send_command(f"LD X={x} Y={y} Z={z}")
         self.read_response()
-    
+
     def set_max_speed(self, axis: str, speed: int):
         "Set the speed (mm/s) for a specific axis"
         self.send_command(f"S {axis}={speed}")
         self.read_response()
-    
+
     def scan_x_axis_enc(self, start: int, num_pix: int, enc_divide: int = 35):
         self.ttl(x=1)
         self.send_command(f"NR X={start} Z={enc_divide} F={num_pix}")
@@ -159,7 +162,7 @@ class MS2000(SerialPort):
         self.read_response()
         self.send_command("SN")
         self.read_response()
-    
+
     def scan_x_axis(self, start: int, stop: int):
         # set ttl to output at x constant move
         self.ttl(y=3)
@@ -169,7 +172,7 @@ class MS2000(SerialPort):
         self.read_response()
         self.send_command("SN")
         self.read_response()
-    
+
     def scan_y_axis(self, start: int, stop: int):
         # set ttl to output at y constant move
         self.ttl(y=4)
@@ -179,42 +182,56 @@ class MS2000(SerialPort):
         self.read_response()
         self.send_command("SN")
         self.read_response()
-    
+
     def set_ring_buffer(self, axis_byte: int = 15):
         """Configure ring buffer for individual axis control"""
         self.send_command(f"RM Y={axis_byte}")
         self.read_response()
-    
+
     def ttl(self, x: int = 0, y: int = 0):
         self.send_command(f"TTL X={x} Y={y}")
         self.read_response()
-    
+
     def get_position(self, axis: str) -> int:
         """Return position of the stage in ASI units (tenths of microns)"""
         self.send_command(f"WHERE {axis}")
         response = self.read_response()
         return int(response.split(" ")[1])
-    
+
     def get_position_um(self, axis: str) -> float:
         """Return position of the stage in microns"""
         pos = self.get_position(axis)
-        return pos/10.0
-    
+        return pos / 10.0
+
     def set_origin(self):
         """Sets current position as origin point"""
         self.send_command("Z")
         self.read_response()
-    
+
     def halt_all_motion(self):
         """Stop all active motors"""
         self.send_command("\\")
         self.read_response()
-    
+
     def save_settings(self):
         """Save settings to flash memory"""
         self.send_command("SS Z")
         self.read_response()
-    
+
+    def get_crisp_state(self):
+        """Query CRISP state"""
+        self.send_command("LK X?")
+        self.read_response()
+
+    def set_crisp_state(self, state: str = "LOCK"):
+        """Query CRISP state"""
+        if state == "LOCK":
+            self.send_command("LK F=83")
+            self.read_response()
+        elif state == "UNLOCK":
+            self.send_command("UL")
+            self.read_response()
+
     # ------------------------------ #
     #    MS2000 Utility Functions    #
     # ------------------------------ #

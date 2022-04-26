@@ -120,6 +120,11 @@ if __name__ == "__main__":
     # connect to stage serial port
     stage = MS2000("COM3", 115200)
 
+    # check CRISP state
+    crisp_state = stage.get_crisp_state()
+    if crisp_state is not "F":
+        print("CRISP not locked")
+
     # configure camera object
     camera = ACA2040(exp_time=EXPOSURE_TIME_US)
     camera.set_roi_zones(num_zones)
