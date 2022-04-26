@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
     # check CRISP state
     crisp_state = stage.get_crisp_state()
-    if crisp_state is not "F":
+    if crisp_state != "F":
         print("CRISP not locked")
 
     # configure camera object

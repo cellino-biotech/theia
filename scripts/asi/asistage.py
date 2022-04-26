@@ -221,7 +221,7 @@ class MS2000(SerialPort):
     def get_crisp_state(self):
         """Query CRISP state"""
         self.send_command("LK X?")
-        self.read_response()
+        return self.read_response()[-1]
 
     def set_crisp_state(self, state: str = "LOCK"):
         """Query CRISP state"""
