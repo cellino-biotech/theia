@@ -4,6 +4,7 @@
 
 import os
 import json
+import warnings
 
 from datetime import datetime
 from ni.daq import DAQ
@@ -48,8 +49,6 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
 
     stage.scan_x_axis_enc(start=start, num_pix=num_pix, enc_divide=ENC_DIVIDE)
 
-    stage.close()
-
 
 if __name__ == "__main__":
     path, dirname = create_data_dir()
@@ -63,49 +62,55 @@ if __name__ == "__main__":
     # connect to stage serial port
     stage = MS2000("COM3", 115200)
 
-    # check CRISP state
-    crisp_state = stage.get_crisp_state()
-    if crisp_state != "F":
-        print("CRISP not locked!")
+    # query CRISP state
+    if stage.get_crisp_state() != "F":
+        warnings.warn("CRISP not locked!")
 
     # configure camera object
     camera = ACA2040(exp_time=EXPOSURE_TIME_US)
-    camera.set_trigger()
-    camera.digital_io_control(line=2, source="ExposureActive")
+    camera.set_trigger(line=1, activation="RisingEdge")
+    camera.set_io_control(line=2, source="ExposureActive")
     camera.set_roi_zones(num_zones)
 
+    # initialize DAQ
     # daq = DAQ(total_row_acq)
 
     # initiate scan and data acquisition
-    scan(stage, mid_point=mid_point, scan_range=scan_range, num_pix=total_row_acq)
+    scan(stage, mid_point, scan_range, total_row_acq)
     # daq.start()
-    camera.acquire(path, dirname, num_zones, total_row_acq)
+    img = camera.acquire(num_zones, total_row_acq)
     # daq.plot_data()
     # daq.stop()
 
-    correction = Correction(os.path.join(path, dirname + "_overlap.tif"))
-    with open("filter_vals.json") as file:
-        col_filter_vals = json.loads(file.read())
+    img = camera.crop_overlap_zone(img)
 
-    col_filter_vals = col_filter_vals["data"]
-    correction.apply_col_filter(col_filter_vals)
-    correction.full_correction()
-    correction.save(os.path.join(path, dirname + "_proc.tif"))
-    correction.show()
+    correction = Correction(img)
+    correction.apply_col_filter()
+    correction.apply_full_correction()
 
-    # col_filter_vals = correction.calculate_col_filter()
+    img_raw = camera.format_image_array(img)
+    img_proc = camera.format_image_array(correction.crop_arr)
 
-    # with open("filter_vals.json", "w") as file:
-    #     file.write(json.dumps({"data": col_filter_vals.tolist()}))
+    # save imaging data
+    camera.save_image_array(img_raw, os.path.join(path, dirname + "_raw.tif"))
+    camera.save_image_array(img_proc, os.path.join(path, dirname + "_proc.tif"))
 
     params = {
         "total_reconstructions": num_zones,
         "total_overlap_fovs": scan_range_factor,
         "scan_midpoint": mid_point,
         "scan_range": scan_range,
+        "scan_velocity_mm_s": SCAN_VEL_MM_S,
+        "exposure_time_us": EXPOSURE_TIME_US,
+        "pixel_size_mm": PIX_SIZE_MM,
     }
 
     fname = os.path.join(path, dirname + "_params.json")
-
     with open(fname, "w") as file:
-        file.write(json.dumps(params))
+        file.write(json.dumps(params, indent=4))
+
+    # housekeeping
+    stage.close()
+    camera.close()
+
+    correction.show()

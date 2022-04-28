@@ -48,7 +48,7 @@ class ACA2040(InstantCamera):
     @staticmethod
     def save_image_array(img_arr: ndarray, fname: str):
         """Save numpy image array as 16-bit tiff file"""
-        if img_arr.dtype is not np.uint16:
+        if img_arr.dtype != np.uint16:
             img_arr = img_arr.astype(np.uint16)
         tf.imwrite(fname, img_arr, imagej=True)
 
@@ -205,8 +205,8 @@ class ACA2040(InstantCamera):
         finally:
             self.StopGrabbing()
 
-            print(f"total images requested: {total_row_acq}")
-            print(f"total images recorded: {acq_counter}")
+            print(f"Total images requested: {total_row_acq}")
+            print(f"Total images recorded: {acq_counter}")
 
             return reconstruction
 
