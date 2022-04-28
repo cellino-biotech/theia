@@ -188,8 +188,13 @@ class MS2000(SerialPort):
         self.send_command(f"RM Y={axis_byte}")
         self.read_response()
 
+<<<<<<< HEAD
     def ttl(self, axis: str = "X", mode: int = 0):
         self.send_command(f"TTL {axis}={mode}")
+=======
+    def ttl(self, x: int = 0, y: int = 0):
+        self.send_command(f"TTL X={x} Y={y}")
+>>>>>>> led_dev
         self.read_response()
 
     def get_position(self, axis: str) -> int:
@@ -218,6 +223,7 @@ class MS2000(SerialPort):
         self.send_command("SS Z")
         self.read_response()
 
+<<<<<<< HEAD
     def get_crisp_state(self):
         """Query CRISP state"""
         self.send_command("LK X?")
@@ -232,6 +238,8 @@ class MS2000(SerialPort):
             self.send_command("UL")
             self.read_response()
 
+=======
+>>>>>>> led_dev
     # ------------------------------ #
     #    MS2000 Utility Functions    #
     # ------------------------------ #
