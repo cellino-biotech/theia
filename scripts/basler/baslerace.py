@@ -100,7 +100,7 @@ class ACA2040(InstantCamera):
         num_zones: int = 3,
         total_row_acq: int = 1544,
         frame_width: int = 2064,
-    ):
+    ) -> object:
         # initialize imaging data array
         reconstruction = np.empty((num_zones, total_row_acq, frame_width), np.uint16)
 
