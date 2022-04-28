@@ -1,10 +1,10 @@
-import os
 import math
 import numpy as np
 import tifffile as tf
 
 from pypylon import pylon, genicam
 from pypylon.pylon import InstantCamera, TlFactory
+from numpy import ndarray
 
 
 class ACA2040(InstantCamera):
@@ -26,6 +26,7 @@ class ACA2040(InstantCamera):
             # allocate buffers for acquisitions
             self.MaxNumBuffer.SetValue(num_buffers)
 
+            # alternative mode is "SingleFrame"
             self.AcquisitionMode.SetValue("Continuous")
 
             # Mono12p adds padding zeros to data bytes
@@ -35,8 +36,8 @@ class ACA2040(InstantCamera):
             self.ExposureTime.SetValue(exp_time)
 
             # offset must be zero if max width
-            self.Width.SetValue(frame_width)
             self.OffsetX.SetValue(0)
+            self.Width.SetValue(frame_width)
 
         except genicam.GenericException as e:
             if "Device is exlusively opened by another client" in e:
@@ -45,14 +46,43 @@ class ACA2040(InstantCamera):
                 print("Exception: ", e)
 
     @staticmethod
-    def save_image_array(img_array: object, filename: str):
-        # add an empty color channel
-        img_array = np.expand_dims(img_array, axis=0)
+    def save_image_array(img_arr: ndarray, fname: str):
+        """Save numpy image array as 16-bit tiff file"""
+        if img_arr.dtype is not np.uint16:
+            img_arr = img_arr.astype(np.uint16)
+        tf.imwrite(fname, img_arr, imagej=True)
 
-        # rearrange data for multidimensional tiff standard
-        img_array = np.transpose(img_array, axes=[1, 0, 2, 3])
+    @staticmethod
+    def format_image_array(img_arr: ndarray) -> ndarray:
+        """Add an empty color channel and rearrange axes
 
-        tf.imwrite(filename, img_array, imagej=True)
+        Needed for saving tiff files that can be read with
+        ImageJ and Napari
+        """
+        if img_arr.ndim < 4:
+            img_arr = np.expand_dims(img_arr, axis=0)
+            img_arr = np.transpose(img_arr, axes=[1, 0, 2, 3])
+
+        return img_arr
+
+    def crop_overlap_zone(self, img_arr: ndarray) -> ndarray:
+        """Remove non-overlapping rows from each plane"""
+        # we can infer the size of the overlapping array
+        overlap_arr = np.empty(
+            (img_arr.shape[0], img_arr.shape[1] - self.Height.Max, img_arr.shape[2]),
+            dtype=np.uint16,
+        )
+
+        for p in range(img_arr.shape[0]):
+            self.ROIZoneSelector.SetValue(f"Zone{p}")
+            offset = self.ROIZoneOffset.GetValue()
+
+            start = self.Height.Max - offset
+            stop = img_arr.shape[1] - (self.Height.Max - start)
+
+            overlap_arr[p] = img_arr[p, start:stop, :]
+
+        return overlap_arr
 
     def set_trigger(
         self,
@@ -60,12 +90,13 @@ class ACA2040(InstantCamera):
         activation: str = "RisingEdge",
         selector: str = "FrameStart",
     ):
+        """Set hardware trigger"""
         self.TriggerSelector.SetValue(selector)
         self.TriggerActivation.SetValue(activation)
         self.TriggerSource.SetValue(f"Line{line}")
         self.TriggerMode.SetValue("On")
 
-    def digital_io_control(
+    def set_io_control(
         self,
         line: int = 2,
         mode: str = "Input",
@@ -74,6 +105,7 @@ class ACA2040(InstantCamera):
         pulse_width: float = 10.0,
         debounce_time: float = 0.0,
     ):
+        """Configure camera IO lines"""
         self.LineSelector.SetValue(f"Line{line}")
 
         # opto-isolated line modes cannot be changed
@@ -93,6 +125,11 @@ class ACA2040(InstantCamera):
         self.LineInverter.SetValue(invert)
 
     def reset_roi_zones(self):
+        """Turn all ROI zones Off
+
+        These settings persist in camera memory and can affect
+        future acquisitions
+        """
         if genicam.IsWritable(self.ROIZoneMode):
             for i in range(8):
                 self.ROIZoneSelector.SetValue(f"Zone{i}")
@@ -104,7 +141,8 @@ class ACA2040(InstantCamera):
             self.Height.SetValue(self.Height.Max)
 
     def set_roi_zones(self, num_zones: int = 3):
-        # camera remembers previous settings
+        """Automate the creation of evenly-spaced ROI zones"""
+        # NOTE: camera remembers previous settings!
         self.reset_roi_zones()
 
         zone_spacing = math.trunc((self.Height.Max - 4) / (num_zones - 1))
@@ -127,12 +165,15 @@ class ACA2040(InstantCamera):
 
     def acquire(
         self,
-        path: str,
-        dirname: str,
         num_zones: int = 3,
         total_row_acq: int = 1544,
         frame_width: int = 2064,
-    ) -> object:
+    ) -> ndarray:
+        """Initiate acquisition and process incoming frames in real time
+
+        Returns a multidimensional numpy image array
+        """
+
         # initialize imaging data array
         reconstruction = np.empty((num_zones, total_row_acq, frame_width), np.uint16)
 
@@ -143,7 +184,7 @@ class ACA2040(InstantCamera):
             self.StartGrabbingMax(total_row_acq, pylon.GrabStrategy_OneByOne)
 
             while self.IsGrabbing():
-                # use timeout of 2000ms (must be greater than exposure time)
+                # NOTE: timeout must be greater than exposure time!
                 grab_result = self.RetrieveResult(
                     5000, pylon.TimeoutHandling_ThrowException
                 )
@@ -167,30 +208,10 @@ class ACA2040(InstantCamera):
             print(f"total images requested: {total_row_acq}")
             print(f"total images recorded: {acq_counter}")
 
-            overlap = []
-
-            for i in range(num_zones):
-                self.ROIZoneSelector.SetValue(f"Zone{i}")
-                offset = self.ROIZoneOffset.GetValue()
-
-                start = self.Height.Max - offset
-                stop = total_row_acq - (self.Height.Max - start)
-
-                overlap.append(reconstruction[i, start:stop, :])
-
-            self.save_image_array(
-                np.stack(reconstruction, axis=0),
-                os.path.join(path, dirname + "_raw.tif"),
-            )
-
-            self.save_image_array(
-                np.stack(overlap, axis=0),
-                os.path.join(path, dirname + "_overlap.tif"),
-            )
-
-            self.close()
+            return reconstruction
 
     def close(self):
+        """Housekeeping"""
         self.reset_roi_zones()
 
         # deactivate triggering
