@@ -155,7 +155,7 @@ class MS2000(SerialPort):
         self.read_response()
 
     def scan_x_axis_enc(self, start: int, num_pix: int, enc_divide: int = 35):
-        self.ttl(x=1)
+        self.ttl("X", 1)
         self.send_command(f"NR X={start} Z={enc_divide} F={num_pix}")
         self.read_response()
         self.send_command("SN X=1 Y=0 Z=0 F=0")
@@ -165,7 +165,7 @@ class MS2000(SerialPort):
 
     def scan_x_axis(self, start: int, stop: int):
         # set ttl to output at x constant move
-        self.ttl(y=3)
+        self.ttl("Y", 3)
         self.send_command(f"NR X={start} Y={stop}")
         self.read_response()
         self.send_command("SN X=1 Y=0 Z=0 F=0")
@@ -175,7 +175,7 @@ class MS2000(SerialPort):
 
     def scan_y_axis(self, start: int, stop: int):
         # set ttl to output at y constant move
-        self.ttl(y=4)
+        self.ttl("Y", 4)
         self.send_command(f"NR X={start} Y={stop}")
         self.read_response()
         self.send_command("SN X=0 Y=1 Z=0 F=0")
@@ -188,8 +188,8 @@ class MS2000(SerialPort):
         self.send_command(f"RM Y={axis_byte}")
         self.read_response()
 
-    def ttl(self, x: int = 0, y: int = 0):
-        self.send_command(f"TTL X={x} Y={y}")
+    def ttl(self, axis: str = "X", mode: int = 0):
+        self.send_command(f"TTL {axis}={mode}")
         self.read_response()
 
     def get_position(self, axis: str) -> int:

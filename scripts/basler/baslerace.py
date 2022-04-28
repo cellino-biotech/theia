@@ -38,12 +38,6 @@ class ACA2040(InstantCamera):
             self.Width.SetValue(frame_width)
             self.OffsetX.SetValue(0)
 
-            # configure IO trigger
-            self.TriggerSelector.SetValue("FrameStart")
-            self.TriggerActivation.SetValue("FallingEdge")
-            self.TriggerSource.SetValue("Line1")
-            self.TriggerMode.SetValue("On")
-
         except genicam.GenericException as e:
             if "Device is exlusively opened by another client" in e:
                 print("Camera is opened in another program!")
@@ -59,6 +53,44 @@ class ACA2040(InstantCamera):
         img_array = np.transpose(img_array, axes=[1, 0, 2, 3])
 
         tf.imwrite(filename, img_array, imagej=True)
+
+    def set_trigger(
+        self,
+        line: int = 1,
+        activation: str = "RisingEdge",
+        selector: str = "FrameStart",
+    ):
+        self.TriggerSelector.SetValue(selector)
+        self.TriggerActivation.SetValue(activation)
+        self.TriggerSource.SetValue(f"Line{line}")
+        self.TriggerMode.SetValue("On")
+
+    def digital_io_control(
+        self,
+        line: int = 2,
+        mode: str = "Input",
+        source: str = "ExposureActive",
+        invert: bool = False,
+        pulse_width: float = 10.0,
+        debounce_time: float = 0.0,
+    ):
+        self.LineSelector.SetValue(f"Line{line}")
+
+        # opto-isolated line modes cannot be changed
+        if line not in (1, 2):
+            self.LineMode.SetValue(mode)
+
+        if line != 1 and self.LineMode.GetValue() == "Output":
+            # line source triggers the signal
+            self.LineSource.SetValue(source)
+
+            # pulse width in micro-seconds
+            self.LineMinimumOutputPulseWidth.SetValue(pulse_width)
+        else:
+            # debounce time in micro-seconds
+            self.LineDebouncerTime.SetValue(debounce_time)
+
+        self.LineInverter.SetValue(invert)
 
     def reset_roi_zones(self):
         if genicam.IsWritable(self.ROIZoneMode):

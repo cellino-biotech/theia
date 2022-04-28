@@ -41,6 +41,9 @@ def scan(stage: object, mid_point: tuple, scan_range: float, num_pix: int):
 
     stage.set_speed(x=SCAN_VEL_MM_S, y=SCAN_VEL_MM_S)
 
+    # invert TTL logic
+    stage.ttl("F", -1)
+
     start = mid_point[0] - scan_range / 2 - FOV_HEIGHT_MM / 2
 
     stage.scan_x_axis_enc(start=start, num_pix=num_pix, enc_divide=ENC_DIVIDE)
@@ -67,6 +70,8 @@ if __name__ == "__main__":
 
     # configure camera object
     camera = ACA2040(exp_time=EXPOSURE_TIME_US)
+    camera.set_trigger()
+    camera.digital_io_control(line=2, source="ExposureActive")
     camera.set_roi_zones(num_zones)
 
     # daq = DAQ(total_row_acq)
