@@ -223,6 +223,11 @@ class MS2000(SerialPort):
         self.send_command("LK X?")
         return self.read_response()[-1]
 
+    def lock_crisp(self):
+        """Lock CRISP autofocus module"""
+        self.send_command("LK F=83")
+        self.read_response()
+
     def set_crisp_state(self, state: str = "LOCK"):
         """Query CRISP state"""
         if state == "LOCK":
