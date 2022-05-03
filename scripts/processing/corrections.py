@@ -59,19 +59,21 @@ class Correction:
 
             if vertex_down < vertex_up:
                 err_factor_y = np.where(err_y_down == vertex_down)[0][0]
-                # correction_y = img[i][:-err_factor_y] - img[-i-1][err_factor_y:]
-                self.proc_arr[i] = self.proc_arr[i][:-err_factor_y]
-                self.proc_arr[-i - 1] = self.proc_arr[-i - 1][err_factor_y:]
+                if err_factor_y > 0:
+                    self.proc_arr[i] = self.proc_arr[i][:-err_factor_y]
+                    self.proc_arr[-i - 1] = self.proc_arr[-i - 1][err_factor_y:]
                 print(
-                    f"Remove {err_factor_y} rows from the bottom of plane {i} and top of plane {len(self.proc_arr) -i -1}"
+                    f"Remove {err_factor_y} rows from the bottom of plane {i} and "
+                    f"top of plane {len(self.proc_arr) -i -1}"
                 )
             else:
                 err_factor_y = np.where(err_y_up == vertex_up)[0][0]
-                # correction_y = img[i][err_factor_y:] - img[-i-1][:-err_factor_y]
-                self.proc_arr[i] = self.proc_arr[i][err_factor_y:]
-                self.proc_arr[-i - 1] = self.proc_arr[-i - 1][:-err_factor_y]
+                if err_factor_y > 0:
+                    self.proc_arr[i] = self.proc_arr[i][err_factor_y:]
+                    self.proc_arr[-i - 1] = self.proc_arr[-i - 1][:-err_factor_y]
                 print(
-                    f"Remove {err_factor_y} rows from the top of plane {i} and bottom of plane {len(self.proc_arr) -i -1}"
+                    f"Remove {err_factor_y} rows from the top of plane {i} and "
+                    f"bottom of plane {len(self.proc_arr) -i -1}"
                 )
 
         if plot:
@@ -114,19 +116,21 @@ class Correction:
 
             if vertex_right < vertex_left:
                 err_factor_x = np.where(err_x_right == vertex_right)[0][0]
-                # correction_x = img[i][:, err_factor_x:] - img[-i-1][:, :-err_factor_x]
-                self.proc_arr[i] = self.proc_arr[i][:, err_factor_x:]
-                self.proc_arr[-i - 1] = self.proc_arr[-i - 1][:, :-err_factor_x]
+                if err_factor_x > 0:
+                    self.proc_arr[i] = self.proc_arr[i][:, err_factor_x:]
+                    self.proc_arr[-i - 1] = self.proc_arr[-i - 1][:, :-err_factor_x]
                 print(
-                    f"Remove {err_factor_x} cols from the left of plane {i} and right of plane {len(self.proc_arr) -i -1}"
+                    f"Remove {err_factor_x} cols from the left of plane {i} and "
+                    f"right of plane {len(self.proc_arr) -i -1}"
                 )
             else:
                 err_factor_x = np.where(err_x_left == vertex_left)[0][0]
-                # correction_x = img[i][:, :-err_factor_x] - img[-i-1][:, err_factor_x:]
-                self.proc_arr[i] = self.proc_arr[i][:, :-err_factor_x]
-                self.proc_arr[-i - 1] = self.proc_arr[-i - 1][:, err_factor_x:]
+                if err_factor_x > 0:
+                    self.proc_arr[i] = self.proc_arr[i][:, :-err_factor_x]
+                    self.proc_arr[-i - 1] = self.proc_arr[-i - 1][:, err_factor_x:]
                 print(
-                    f"Remove {err_factor_x} cols from the right of plane {i} and left of plane {len(self.proc_arr) -i -1}"
+                    f"Remove {err_factor_x} cols from the right of plane {i} and "
+                    f"left of plane {len(self.proc_arr) -i -1}"
                 )
 
         if plot:
@@ -189,9 +193,10 @@ class Correction:
             with open("scripts/processing/filter_vals.json") as file:
                 filters = json.loads(file.read())
 
+            # use either amin or mean
             col_filter_vals = filters[str(self.img_arr.shape[0])]
             col_filter_vals = np.multiply(
-                col_filter_vals, (1 / np.amin(col_filter_vals))
+                col_filter_vals, (1 / np.mean(col_filter_vals))
             )
             for p in range(self.img_arr.shape[0]):
                 for r in range(self.img_arr.shape[1]):
