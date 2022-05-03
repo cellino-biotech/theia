@@ -17,12 +17,12 @@ from processing.corrections import Correction
 SENSOR_WIDTH_PIX = 2064
 SENSOR_HEIGHT_PIX = 1544
 PIX_SIZE_MM = 0.35e-3  # determined from ImageJ
-EXPOSURE_TIME_US = 50  # given max light intensity
+EXPOSURE_TIME_US = 30  # given max light intensity
 FPS_MAX = 635
 
 # inferred constants
 FOV_HEIGHT_MM = SENSOR_HEIGHT_PIX * PIX_SIZE_MM
-SCAN_VEL_MM_S = PIX_SIZE_MM * FPS_MAX
+SCAN_VEL_MM_S = PIX_SIZE_MM * FPS_MAX / 2
 ENC_DIVIDE = PIX_SIZE_MM * 10e4
 
 
@@ -54,8 +54,8 @@ if __name__ == "__main__":
     path, dirname = create_data_dir()
 
     mid_point = (0, 0)  # scan mid-point
-    num_zones = 5  # number of image slices
-    scan_range_factor = 1  # number of overlapping fovs
+    num_zones = 3  # number of image slices
+    scan_range_factor = 2  # number of overlapping fovs
     scan_range = scan_range_factor * FOV_HEIGHT_MM
     total_row_acq = SENSOR_HEIGHT_PIX * (scan_range_factor + 1)
 
@@ -64,13 +64,14 @@ if __name__ == "__main__":
 
     # query CRISP state
     if stage.get_crisp_state() != "F":
-        warnings.warn("CRISP not locked!")
+        # warnings.warn("CRISP not locked!")
+        stage.lock_crisp()
 
     # configure camera object
-    camera = ACA2040(exp_time=EXPOSURE_TIME_US)
-    camera.set_trigger(line=1, activation="RisingEdge")
-    camera.set_io_control(line=2, source="ExposureActive")
-    camera.set_roi_zones(num_zones)
+    # camera = ACA2040(exp_time=EXPOSURE_TIME_US)
+    # camera.set_trigger(line=1, activation="RisingEdge")
+    # camera.set_io_control(line=2, source="ExposureActive")
+    # camera.set_roi_zones(num_zones)
 
     # initialize DAQ
     # daq = DAQ(total_row_acq)
@@ -78,39 +79,39 @@ if __name__ == "__main__":
     # initiate scan and data acquisition
     scan(stage, mid_point, scan_range, total_row_acq)
     # daq.start()
-    img = camera.acquire(num_zones, total_row_acq)
+    # img = camera.acquire(num_zones, total_row_acq)
     # daq.plot_data()
     # daq.stop()
 
-    img = camera.crop_overlap_zone(img)
+    # img = camera.crop_overlap_zone(img)
 
-    correction = Correction(img)
-    correction.apply_col_filter()
-    correction.apply_full_correction()
+    # correction = Correction(img)
+    # correction.apply_col_filter()
+    # correction.apply_full_correction()
 
-    img_raw = camera.format_image_array(img)
-    img_proc = camera.format_image_array(correction.crop_arr)
+    # img_raw = camera.format_image_array(img)
+    # img_proc = camera.format_image_array(correction.crop_arr)
 
     # save imaging data
-    camera.save_image_array(img_raw, os.path.join(path, dirname + "_raw.tif"))
-    camera.save_image_array(img_proc, os.path.join(path, dirname + "_proc.tif"))
+    # camera.save_image_array(img_raw, os.path.join(path, dirname + "_raw.tif"))
+    # camera.save_image_array(img_proc, os.path.join(path, dirname + "_proc.tif"))
 
-    params = {
-        "total_reconstructions": num_zones,
-        "total_overlap_fovs": scan_range_factor,
-        "scan_midpoint": mid_point,
-        "scan_range": scan_range,
-        "scan_velocity_mm_s": SCAN_VEL_MM_S,
-        "exposure_time_us": EXPOSURE_TIME_US,
-        "pixel_size_mm": PIX_SIZE_MM,
-    }
+    # params = {
+    #     "total_reconstructions": num_zones,
+    #     "total_overlap_fovs": scan_range_factor,
+    #     "scan_midpoint": mid_point,
+    #     "scan_range": scan_range,
+    #     "scan_velocity_mm_s": SCAN_VEL_MM_S,
+    #     "exposure_time_us": EXPOSURE_TIME_US,
+    #     "pixel_size_mm": PIX_SIZE_MM,
+    # }
 
-    fname = os.path.join(path, dirname + "_params.json")
-    with open(fname, "w") as file:
-        file.write(json.dumps(params, indent=4))
+    # fname = os.path.join(path, dirname + "_params.json")
+    # with open(fname, "w") as file:
+    #     file.write(json.dumps(params, indent=4))
 
     # housekeeping
     stage.close()
-    camera.close()
+    # camera.close()
 
-    correction.show()
+    # correction.show()
