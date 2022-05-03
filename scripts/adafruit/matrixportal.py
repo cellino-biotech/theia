@@ -41,7 +41,7 @@ class SerialPort:
             if descriptor in com.description:
                 return com[0]
 
-    def send_command(self, cmd: str):
+    def send(self, cmd: str):
         # good practice to reset buffers before each transmission
         self.serial_port.reset_input_buffer()
         self.serial_port.reset_output_buffer()
@@ -49,7 +49,7 @@ class SerialPort:
         cmd = cmd + "\r"
         self.serial_port.write(cmd.encode())  # pass as bytearray
 
-    def read_response(self) -> str:
+    def read(self) -> str:
         return self.serial_port.readline().decode("utf-8", "ignore").strip()
 
     def close(self):
@@ -69,3 +69,6 @@ class MatrixPortal(SerialPort):
             raise ValueError(
                 "Invalid baudrate. Valid rates include 9600, 19200, 28800, 115200"
             )
+
+        self.height = 64
+        self.width = 64

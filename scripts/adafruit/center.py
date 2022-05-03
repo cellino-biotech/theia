@@ -2,7 +2,6 @@ import time
 import board
 import displayio
 import rgbmatrix
-import terminalio
 import framebufferio
 
 
@@ -37,35 +36,47 @@ matrix = rgbmatrix.RGBMatrix(
 display = framebufferio.FramebufferDisplay(matrix)
 
 # create Bitmap with two colors
-bitmap0 = displayio.Bitmap(display.width, display.height, 2)
-bitmap1 = displayio.Bitmap(display.width, display.height, 2)
+bitmap = displayio.Bitmap(display.width, display.height, 2)
 
 # create corresponding Palette with two colors
 palette = displayio.Palette(2)
 palette[0] = 0x000000
-palette[1] = 0xFFF
+palette[1] = 0xFFFFFF
 
 # create TileGrid using the Bitmap and Palette
-tile_grid0 = displayio.TileGrid(bitmap0, pixel_shader=palette)
-tile_grid1 = displayio.TileGrid(bitmap1, pixel_shader=palette)
+tile_grid = displayio.TileGrid(bitmap, pixel_shader=palette)
 
 # create Group
-group0 = displayio.Group()
-group1 = displayio.Group()
+group = displayio.Group()
 
 # add TileGrid to Group
-group0.append(tile_grid0)
-group1.append(tile_grid1)
+group.append(tile_grid)
 
-for x in range(display.width):
-    for y in range(display.height):
-        bitmap0[x, y] = 1 if x > 31 else 0
-        bitmap1[x, y] = 1 if x < 32 else 0
+timeout = 0.01
 
-# add Group to Display
 while True:
-    print("show display")
-    display.show(group0)
-    time.sleep(0.25)
-    display.show(group1)
-    time.sleep(0.25)
+    for col in range(display.width):
+        for x in range(display.width):
+            for y in range(display.height):
+                bitmap[x, y] = 1 if x == col else 0
+        display.show(group)
+        time.sleep(timeout)
+        print("1")
+        time.sleep(timeout)
+
+    for y in range(display.height):
+        bitmap[display.width - 1, y] = 0
+    display.show(group)
+
+    for row in range(display.height):
+        for y in range(display.height):
+            for x in range(display.width):
+                bitmap[x, y] = 1 if y == row else 0
+        display.show(group)
+        time.sleep(timeout)
+        print("1")
+        time.sleep(timeout)
+
+    for x in range(display.width):
+        bitmap[x, display.height - 1] = 0
+    display.show(group)
