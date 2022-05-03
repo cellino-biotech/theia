@@ -125,4 +125,8 @@ Tutorials, manuals, datasheets, and parts...
 * [Basler I/O Connector Cable](https://www.mouser.com/ProductDetail/405-2200000625)
 
 #### Adafruit
-* [Adafruit MatrixPortal Library](https://docs.circuitpython.org/projects/matrixportal/en/latest/)
+* [LED Matrix Panel 64x64](https://www.adafruit.com/product/5362)
+* [CircuitPython displayio Guide](https://learn.adafruit.com/circuitpython-display-support-using-displayio/introduction)
+* [Display Shapes Library API](https://docs.circuitpython.org/projects/display-shapes/en/latest/api.html)
+* [MatrixPortal M4](https://learn.adafruit.com/adafruit-matrixportal-m4)
+* [MatrixPortal Library](https://docs.circuitpython.org/projects/matrixportal/en/latest/)
