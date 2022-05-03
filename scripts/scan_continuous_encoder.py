@@ -68,7 +68,7 @@ if __name__ == "__main__":
     stage_vel = cam.sensor_pix_size_mm * cam.fps_max
 
     # configure camera triggers, zones, and IO
-    cam.set_trigger(line=1, activation="RisingEdge")
+    cam.set_trigger()
     cam.set_io_control(line=2, source="ExposureActive")
     cam.set_roi_zones(num_zones)
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         total_row_acq,
     )
     # daq.start()
-    img = cam.acquire(num_zones, total_row_acq)
+    img = cam.acquire_stack(num_zones, total_row_acq)
     # daq.plot_data()
     # daq.stop()
 

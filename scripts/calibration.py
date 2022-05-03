@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
             # initiate scan and data acquisition
             scan(stage, mid_point, scan_range, total_row_acq)
-            img = cam.acquire(z, total_row_acq)
+            img = cam.acquire_stack(z, total_row_acq)
 
             col_filter_vals = calc_col_filter(img)
 

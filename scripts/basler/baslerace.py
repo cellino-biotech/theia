@@ -1,4 +1,5 @@
 import math
+import warnings
 import numpy as np
 import tifffile as tf
 
@@ -102,14 +103,15 @@ class ACA2040:
 
     def set_trigger(
         self,
-        line: int = 1,
+        source: str = "Line1",
         activation: str = "RisingEdge",
         selector: str = "FrameStart",
     ):
         """Set hardware trigger"""
         self.dev.TriggerSelector.SetValue(selector)
-        self.dev.TriggerActivation.SetValue(activation)
-        self.dev.TriggerSource.SetValue(f"Line{line}")
+        if "Line" in source:
+            self.dev.TriggerActivation.SetValue(activation)
+        self.dev.TriggerSource.SetValue(source)
         self.dev.TriggerMode.SetValue("On")
 
     def set_io_control(
@@ -157,33 +159,78 @@ class ACA2040:
             self.dev.Height.SetValue(self.dev.Height.Max)
 
     def set_roi_zones(self, num_zones: int = 3):
-        """Automate the creation of evenly-spaced ROI zones"""
+        """Automate the creation of evenly-spaced ROI zones
+
+        If num_zones == 1, simply set the camera height to 1 pix and
+        adjust offset accordingly
+        """
         # NOTE: camera remembers previous settings!
         self.reset_roi_zones()
 
-        zone_spacing = math.trunc((self.dev.Height.Max - 4) / (num_zones - 1))
-        zone_offset = 0
+        if num_zones > 1 and num_zones < 8:
+            zone_spacing = math.trunc((self.dev.Height.Max - 4) / (num_zones - 1))
+            zone_offset = 0
 
-        for i in range(num_zones):
-            self.dev.ROIZoneSelector.SetValue(f"Zone{i}")
-            try:
-                self.dev.ROIZoneOffset.SetValue(zone_offset)
-            except genicam.OutOfRangeException:
-                # camera offset must be divisible by minimum zone pix height
-                adjusted_offset = zone_offset
-                while adjusted_offset % 4:
-                    adjusted_offset -= 1
-                self.dev.ROIZoneOffset.SetValue(adjusted_offset)
-            self.dev.ROIZoneSize.SetValue(4)
-            self.dev.ROIZoneMode.SetValue("On")
+            for i in range(num_zones):
+                self.dev.ROIZoneSelector.SetValue(f"Zone{i}")
+                try:
+                    self.dev.ROIZoneOffset.SetValue(zone_offset)
+                except genicam.OutOfRangeException:
+                    # camera offset must be divisible by minimum zone pix height
+                    adjusted_offset = zone_offset
+                    while adjusted_offset % 4:
+                        adjusted_offset -= 1
+                    self.dev.ROIZoneOffset.SetValue(adjusted_offset)
+                self.dev.ROIZoneSize.SetValue(4)
+                self.dev.ROIZoneMode.SetValue("On")
 
-            zone_offset += zone_spacing
+                zone_offset += zone_spacing
+        elif num_zones == 1:
+            self.dev.Height.SetValue(1)
+            self.dev.OffsetY.SetValue(self.sensor_height_pix / 2)
+        else:
+            warnings.warn("Requested ROI zones is outside hardware configuration")
 
-    def acquire(
+    def acquire_sequence(self, total_acqs: int, timeout: int = 5000) -> ndarray:
+        # initialize imaging data array
+        img_seq = np.empty(
+            (total_acqs, self.dev.Height.GetValue(), self.dev.Width.GetValue()),
+            np.uint16,
+        )
+
+        # initialize counter to track acquisitions
+        acq_counter = 0
+
+        try:
+            self.dev.StartGrabbingMax(total_acqs, pylon.GrabStrategy_OneByOne)
+
+            while self.dev.IsGrabbing():
+                # NOTE: timeout must be greater than exposure time!
+                grab_result = self.dev.RetrieveResult(
+                    timeout, pylon.TimeoutHandling_ThrowException
+                )
+
+                if grab_result.GrabSucceeded():
+                    img_seq[acq_counter] = grab_result.Array
+                    acq_counter += 1
+                else:
+                    print(
+                        "Error: ", grab_result.ErrorCode, grab_result.ErrorDescription
+                    )
+                grab_result.Release()
+        except genicam.GenericException as e:
+            print(e)
+        finally:
+            self.dev.StopGrabbing()
+
+            return img_seq
+
+    def acquire_stack(
         self,
         num_zones: int = 3,
         total_row_acq: int = 1544,
         frame_width: int = 2064,
+        timeout: int = 5000,
     ) -> ndarray:
         """Initiate acquisition and process incoming frames in real time
 
@@ -202,7 +249,7 @@ class ACA2040:
             while self.dev.IsGrabbing():
                 # NOTE: timeout must be greater than exposure time!
                 grab_result = self.dev.RetrieveResult(
-                    5000, pylon.TimeoutHandling_ThrowException
+                    timeout, pylon.TimeoutHandling_ThrowException
                 )
 
                 if grab_result.GrabSucceeded():
