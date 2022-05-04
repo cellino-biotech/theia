@@ -11,9 +11,11 @@ def apply_col_filter(img_arr: ndarray):
 
     Assume filter values file is located in same parent directory
     """
-    parent_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-    if os.path.exists(parent_dir, "cal_data_tilt.json"):
-        with open("scripts/processing/cal_data_tilt.json") as file:
+    file_dir = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "cal_data_tilt.json"
+    )
+    if os.path.exists(file_dir):
+        with open(file_dir) as file:
             cal_data = json.loads(file.read())
 
         # extract data corresponding to the number of image planes

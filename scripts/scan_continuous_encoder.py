@@ -4,13 +4,14 @@
 
 import os
 import json
+import napari
 import warnings
+import processing.alignment as alignment
 
 from datetime import datetime
 from ni.daq import DAQ
 from asi.asistage import MS2000
 from basler.baslerace import ACA2040
-from processing.corrections import Correction
 
 
 def create_data_dir():
@@ -95,12 +96,11 @@ if __name__ == "__main__":
 
     img = cam.crop_overlap_zone(img)
 
-    correction = Correction(img)
-    correction.apply_col_filter()
-    correction.apply_full_correction()
+    img_align = alignment.align(img)
+    img_crop = alignment.crop(img_align)
 
     img_raw = cam.format_image_array(img)
-    img_proc = cam.format_image_array(correction.crop_arr)
+    img_proc = cam.format_image_array(img_crop)
 
     # save imaging data
     cam.save_image_array(img_raw, os.path.join(path, dirname + "_raw.tif"))
@@ -124,4 +124,10 @@ if __name__ == "__main__":
     stage.close()
     cam.close()
 
-    correction.show()
+    viewer = napari.Viewer()
+
+    viewer.dims.axis_labels = ("z", "y", "x")
+    viewer.add_image(img, name="raw", visible=False)
+    viewer.add_image(img_proc, name="processed")
+
+    napari.run()
