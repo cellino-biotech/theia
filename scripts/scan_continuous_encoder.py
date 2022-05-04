@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     mid_point = (0, 0)  # scan mid-point
     num_zones = 5  # number of image slices
-    scan_range_factor = 20  # number of overlapping fovs
+    scan_range_factor = 1  # number of overlapping fovs
 
     scan_range = scan_range_factor * cam.fov_height_mm
     total_row_acq = cam.sensor_height_pix * (scan_range_factor + 1)
@@ -96,15 +96,7 @@ if __name__ == "__main__":
 
     img = cam.crop_overlap_zone(img)
 
-    img_align = alignment.align(img)
-    img_crop = alignment.crop(img_align)
-
-    img_raw = cam.format_image_array(img)
-    img_proc = cam.format_image_array(img_crop)
-
-    # save imaging data
-    cam.save_image_array(img_raw, os.path.join(path, dirname + "_raw.tif"))
-    cam.save_image_array(img_proc, os.path.join(path, dirname + "_proc.tif"))
+    img_proc = alignment.align(img)
 
     params = {
         "total_reconstructions": num_zones,
@@ -131,3 +123,10 @@ if __name__ == "__main__":
     viewer.add_image(img_proc, name="processed")
 
     napari.run()
+
+    img_raw = cam.format_image_array(img)
+    img_proc = cam.format_image_array(img_proc)
+
+    # save imaging data
+    cam.save_image_array(img_raw, os.path.join(path, dirname + "_raw.tif"))
+    cam.save_image_array(img_proc, os.path.join(path, dirname + "_proc.tif"))

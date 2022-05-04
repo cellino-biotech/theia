@@ -16,53 +16,7 @@ def reformat(arr: ndarray) -> ndarray:
         return arr
 
 
-def align(arr: ndarray) -> ndarray:
-    arr = reformat(arr)
-
-    # for easier processing, break image stack into list
-    arr = [arr[i] for i in range(arr.shape[0])]
-
-    # read alignment data file
-    file_dir = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "align_data_flat.json"
-    )
-    if os.path.exists(file_dir):
-        with open(file_dir) as file:
-            align_data = json.loads(file.read())
-
-        # extract data corresponding to the number of image planes
-        align_data = align_data[str(arr.shape[0])]
-
-        for i in range(len(arr)):
-            row_shift = align_data["rows"][i]
-            if row_shift < 0:
-                # shift down
-                arr[i] = arr[i][:row_shift]
-            elif row_shift > 0:
-                # shift up
-                arr[i] = arr[i][row_shift:]
-            else:
-                pass
-
-            col_shift = align_data["cols"][i]
-            if col_shift < 0:
-                # shift right
-                arr[i] = arr[i][:, :-col_shift]
-            elif col_shift > 0:
-                # shift left
-                arr[i] = arr[i][:, col_shift:]
-            else:
-                pass
-
-    return np.stack(arr, axis=0).astype(np.uint16)
-
-
-def crop(arr: ndarray) -> ndarray:
-    arr = reformat(arr)
-
-    # for easier processing, break image stack into list
-    arr = [arr[i] for i in range(arr.shape[0])]
-
+def crop(arr: list) -> ndarray:
     shape = list(arr[0].shape)
 
     for i in arr:
@@ -89,3 +43,44 @@ def crop(arr: ndarray) -> ndarray:
                 arr[i] = arr[i][:, int(diff / 2) : int(-diff / 2)]
 
     return np.stack(arr, axis=0).astype(np.uint16)
+
+
+def align(arr: ndarray) -> ndarray:
+    arr = reformat(arr)
+
+    # for easier processing, break image stack into list
+    arr = [arr[i] for i in range(arr.shape[0])]
+
+    # read alignment data file
+    file_dir = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "align_data_flat.json"
+    )
+    if os.path.exists(file_dir):
+        with open(file_dir) as file:
+            align_data = json.loads(file.read())
+
+        # extract data corresponding to the number of image planes
+        align_data = align_data[str(len(arr))]
+
+        for i in range(len(arr)):
+            row_shift = align_data["rows"][i]
+            if row_shift < 0:
+                # shift down
+                arr[i] = arr[i][:row_shift]
+            elif row_shift > 0:
+                # shift up
+                arr[i] = arr[i][row_shift:]
+            else:
+                pass
+
+            col_shift = align_data["cols"][i]
+            if col_shift < 0:
+                # shift right
+                arr[i] = arr[i][:, :col_shift]
+            elif col_shift > 0:
+                # shift left
+                arr[i] = arr[i][:, col_shift:]
+            else:
+                pass
+
+    return crop(arr)
