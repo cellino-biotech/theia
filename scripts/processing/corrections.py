@@ -4,7 +4,6 @@ import json
 import napari
 import warnings
 import numpy as np
-import tifffile as tf
 
 from matplotlib import pyplot as plt
 from numpy import ndarray
@@ -187,20 +186,18 @@ class Correction:
         """
         if os.path.exists(
             os.path.join(
-                os.path.dirname(os.path.realpath(__file__)), "filter_vals.json"
+                os.path.dirname(os.path.realpath(__file__)), "cal_data_tilt.json"
             )
         ):
-            with open("scripts/processing/filter_vals.json") as file:
+            with open("scripts/processing/cal_data_tilt.json") as file:
                 filters = json.loads(file.read())
 
             # use either amin or mean
-            col_filter_vals = filters[str(self.img_arr.shape[0])]
-            col_filter_vals = np.multiply(
-                col_filter_vals, (1 / np.mean(col_filter_vals))
-            )
+            cal_data_vals = filters[str(self.img_arr.shape[0])]
+            # cal_data_vals = np.multiply(cal_data_vals, (1 / np.amin(cal_data_vals)))
             for p in range(self.img_arr.shape[0]):
                 for r in range(self.img_arr.shape[1]):
-                    self.img_arr[p][r] = self.img_arr[p][r] / col_filter_vals[p]
+                    self.img_arr[p][r] = self.img_arr[p][r] / cal_data_vals[p]
         else:
             warnings.warn("Missing filter values file!")
 
