@@ -4,84 +4,352 @@
 #
 #    pip-compile
 #
+alabaster==0.7.12
+    # via sphinx
+appdirs==1.4.4
+    # via
+    #   napari
+    #   npe2
+asttokens==2.0.5
+    # via stack-data
+attrs==21.4.0
+    # via jsonschema
+babel==2.10.1
+    # via sphinx
+backcall==0.2.0
+    # via ipython
 black==22.1.0
     # via -r requirements.in
+cachey==0.2.1
+    # via napari
+certifi==2021.10.8
+    # via
+    #   napari
+    #   requests
+charset-normalizer==2.0.12
+    # via requests
 click==8.0.4
-    # via black
+    # via
+    #   black
+    #   typer
 cloudpickle==2.0.0
     # via dask
 colorama==0.4.4
-    # via click
+    # via
+    #   click
+    #   ipython
+    #   sphinx
+    #   tqdm
+cycler==0.11.0
+    # via matplotlib
 dask[array]==2022.2.1
-    # via pycromanager
+    # via
+    #   napari
+    #   pycromanager
+debugpy==1.6.0
+    # via ipykernel
+decorator==5.1.1
+    # via ipython
 docstring-inheritance==1.0.0
     # via pycromanager
+docstring-parser==0.14.1
+    # via magicgui
+docutils==0.17.1
+    # via sphinx
+entrypoints==0.4
+    # via jupyter-client
+executing==0.8.3
+    # via stack-data
+fonttools==4.33.3
+    # via matplotlib
+freetype-py==2.3.0
+    # via vispy
 fsspec==2022.2.0
     # via dask
+heapdict==1.0.1
+    # via cachey
+hsluv==5.0.2
+    # via vispy
+idna==3.3
+    # via requests
 imageio==2.16.1
-    # via scikit-image
+    # via
+    #   napari
+    #   napari-svg
+    #   scikit-image
+imagesize==1.3.0
+    # via sphinx
+importlib-metadata==4.11.3
+    # via sphinx
+ipykernel==6.13.0
+    # via
+    #   napari-console
+    #   qtconsole
+ipython==8.3.0
+    # via
+    #   ipykernel
+    #   napari-console
+ipython-genutils==0.2.0
+    # via qtconsole
+jedi==0.18.1
+    # via ipython
+jinja2==3.1.2
+    # via
+    #   numpydoc
+    #   sphinx
+jsonschema==4.4.0
+    # via napari
+jupyter-client==7.3.0
+    # via
+    #   ipykernel
+    #   qtconsole
+jupyter-core==4.10.0
+    # via
+    #   jupyter-client
+    #   qtconsole
+kiwisolver==1.4.2
+    # via
+    #   matplotlib
+    #   vispy
 locket==0.2.1
     # via partd
+magicgui==0.4.0
+    # via
+    #   napari
+    #   npe2
+markupsafe==2.1.1
+    # via jinja2
+matplotlib==3.5.2
+    # via -r requirements.in
+matplotlib-inline==0.1.3
+    # via
+    #   ipykernel
+    #   ipython
 mypy-extensions==0.4.3
     # via black
+napari==0.4.15
+    # via -r requirements.in
+napari-console==0.0.4
+    # via napari
+napari-plugin-engine==0.2.0
+    # via
+    #   napari
+    #   napari-console
+    #   napari-svg
+napari-svg==0.1.6
+    # via napari
+nest-asyncio==1.5.5
+    # via
+    #   ipykernel
+    #   jupyter-client
 networkx==2.7.1
     # via scikit-image
 nidaqmx==0.6.1
     # via -r requirements.in
+npe2==0.3.0
+    # via napari
 numpy==1.22.3
     # via
     #   dask
     #   imageio
+    #   matplotlib
+    #   napari
+    #   napari-svg
     #   nidaqmx
+    #   pandas
     #   pycromanager
     #   pywavelets
     #   scikit-image
     #   scipy
     #   tifffile
+    #   vispy
+numpydoc==1.3.1
+    # via napari
 packaging==21.3
     # via
     #   dask
+    #   ipykernel
+    #   matplotlib
+    #   qtpy
     #   scikit-image
+    #   sphinx
+    #   superqt
+pandas==1.4.2
+    # via napari
+parso==0.8.3
+    # via jedi
 partd==1.2.0
     # via dask
 pathspec==0.9.0
     # via black
+pickleshare==0.7.5
+    # via ipython
 pillow==9.0.1
     # via
     #   -r requirements.in
     #   imageio
+    #   matplotlib
+    #   napari
     #   scikit-image
+pint==0.19.2
+    # via napari
 platformdirs==2.5.1
     # via black
+prompt-toolkit==3.0.29
+    # via ipython
+psutil==5.9.0
+    # via
+    #   ipykernel
+    #   napari
+psygnal==0.3.4
+    # via
+    #   magicgui
+    #   npe2
+pure-eval==0.2.2
+    # via stack-data
 pycromanager==0.17.0
     # via -r requirements.in
+pydantic==1.9.0
+    # via
+    #   napari
+    #   npe2
+pygments==2.12.0
+    # via
+    #   ipython
+    #   qtconsole
+    #   sphinx
+pyopengl==3.1.6
+    # via napari
 pyparsing==3.0.7
-    # via packaging
+    # via
+    #   matplotlib
+    #   packaging
 pypylon==1.8.0
     # via -r requirements.in
+pyqt5==5.15.6
+    # via -r requirements.in
+pyqt5-qt5==5.15.2
+    # via pyqt5
+pyqt5-sip==12.10.1
+    # via pyqt5
+pyrsistent==0.18.1
+    # via jsonschema
 pyserial==3.5
     # via -r requirements.in
+python-dateutil==2.8.2
+    # via
+    #   jupyter-client
+    #   matplotlib
+    #   pandas
+pytomlpp==1.0.11
+    # via npe2
+pytz==2022.1
+    # via
+    #   babel
+    #   pandas
 pywavelets==1.3.0
     # via scikit-image
+pywin32==304
+    # via jupyter-core
 pyyaml==6.0
-    # via dask
+    # via
+    #   dask
+    #   napari
+    #   npe2
 pyzmq==22.3.0
-    # via pycromanager
+    # via
+    #   jupyter-client
+    #   pycromanager
+    #   qtconsole
+qtconsole==5.3.0
+    # via napari-console
+qtpy==2.1.0
+    # via
+    #   magicgui
+    #   napari
+    #   napari-console
+    #   qtconsole
+    #   superqt
+requests==2.27.1
+    # via sphinx
 scikit-image==0.19.2
     # via -r requirements.in
 scipy==1.8.0
-    # via scikit-image
+    # via
+    #   napari
+    #   scikit-image
 six==1.16.0
-    # via nidaqmx
+    # via
+    #   nidaqmx
+    #   python-dateutil
+snowballstemmer==2.2.0
+    # via sphinx
+sphinx==4.5.0
+    # via numpydoc
+sphinxcontrib-applehelp==1.0.2
+    # via sphinx
+sphinxcontrib-devhelp==1.0.2
+    # via sphinx
+sphinxcontrib-htmlhelp==2.0.0
+    # via sphinx
+sphinxcontrib-jsmath==1.0.1
+    # via sphinx
+sphinxcontrib-qthelp==1.0.3
+    # via sphinx
+sphinxcontrib-serializinghtml==1.1.5
+    # via sphinx
+stack-data==0.2.0
+    # via ipython
+superqt==0.3.2
+    # via napari
 tifffile==2022.3.25
     # via
     #   -r requirements.in
+    #   napari
     #   scikit-image
 tomli==2.0.1
     # via black
 toolz==0.11.2
     # via
     #   dask
+    #   napari
     #   partd
+tornado==6.1
+    # via
+    #   ipykernel
+    #   jupyter-client
+tqdm==4.64.0
+    # via napari
+traitlets==5.1.1
+    # via
+    #   ipykernel
+    #   ipython
+    #   jupyter-client
+    #   jupyter-core
+    #   matplotlib-inline
+    #   qtconsole
+typer==0.4.1
+    # via npe2
 typing-extensions==4.1.1
-    # via black
+    # via
+    #   black
+    #   magicgui
+    #   napari
+    #   psygnal
+    #   pydantic
+    #   superqt
+urllib3==1.26.9
+    # via requests
+vispy==0.10.0
+    # via
+    #   napari
+    #   napari-svg
+wcwidth==0.2.5
+    # via prompt-toolkit
+wrapt==1.14.1
+    # via napari
+zipp==3.8.0
+    # via importlib-metadata
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

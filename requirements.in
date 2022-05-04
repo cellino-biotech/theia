@@ -1,7 +1,10 @@
 black
+matplotlib
+napari
 pillow
 pycromanager
 pypylon
+pyqt5
 pyserial
 scikit-image
 tifffile
