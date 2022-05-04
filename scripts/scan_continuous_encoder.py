@@ -43,6 +43,7 @@ def scan(
     stage.ttl("F", -1)
 
     start = mid_point[0] - scan_range / 2 - fov_height / 2
+    start = "{:.6f}".format(start)
 
     stage.scan_x_axis_enc(start=start, num_pix=num_pix, enc_divide=enc_divide)
 
@@ -56,16 +57,18 @@ if __name__ == "__main__":
 
     # query CRISP state
     if stage.get_crisp_state() != "F":
-        # warnings.warn("CRISP not locked!")
-        stage.lock_crisp()
+        warnings.warn("CRISP may not be locked!")
+        # stage.lock_crisp()
 
     mid_point = (0, 0)  # scan mid-point
-    num_zones = 3  # number of image slices
-    scan_range_factor = 2  # number of overlapping fovs
+    num_zones = 5  # number of image slices
+    scan_range_factor = 20  # number of overlapping fovs
 
     scan_range = scan_range_factor * cam.fov_height_mm
     total_row_acq = cam.sensor_height_pix * (scan_range_factor + 1)
-    stage_vel = cam.sensor_pix_size_mm * cam.fps_max
+
+    # restrict stage velocity to 4 decimal places
+    stage_vel = "{:.4f}".format(cam.sensor_pix_size_mm * cam.fps_max / 2)
 
     # configure camera triggers, zones, and IO
     cam.set_trigger()
