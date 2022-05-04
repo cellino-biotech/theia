@@ -20,7 +20,7 @@ class ACA2040:
     ):
         self.sensor_width_pix = 2064
         self.sensor_height_pix = 1544
-        self.sensor_pix_size_mm = 350e-6
+        self.sensor_pix_size_mm = 380e-6
         self.fps_max = 635
 
         self.fov_height_mm = self.sensor_height_pix * self.sensor_pix_size_mm
