@@ -53,8 +53,8 @@ if __name__ == "__main__":
 
     # query CRISP state
     if stage.get_crisp_state() != "F":
-        # warnings.warn("CRISP not locked!")
-        stage.lock_crisp()
+        warnings.warn("CRISP not locked!")
+        # stage.lock_crisp()
 
     mid_point = (0, 0)  # scan mid-point
     scan_range_factor = 2  # number of overlapping fovs
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             vals[str(z)] = col_filter_vals.tolist()
 
         # save filtering values
-        with open("./scripts/processing/cal_data_tilt.json", "w") as file:
+        with open("./scripts/processing/artifact_data_tilt.json", "w") as file:
             file.write(json.dumps(vals, indent=4))
 
     # housekeeping

@@ -17,7 +17,7 @@ def row_shift(arr: ndarray, plot: bool = False) -> ndarray:
     arr = arr.astype(np.float64)
     rows = np.zeros((arr.shape[0],), dtype=int)
 
-    for i in range(arr.shape[0] / 2):
+    for i in range(int(arr.shape[0] / 2)):
         # subtract corresponding image slices for reference
         subtraction = arr[i] - arr[-i - 1]
 
@@ -81,13 +81,13 @@ def col_shift(arr: ndarray, plot: bool = False) -> ndarray:
     arr = arr.astype(np.float64)
     cols = np.zeros((arr.shape[0],), dtype=int)
 
-    for i in range(arr.shape[0] / 2):
+    for i in range(int(arr.shape[0] / 2)):
         # subtract corresponding image slices for reference
         subtraction = arr[i] - arr[-i - 1]
 
         err_baseline = np.sqrt(np.sum(np.square(subtraction)))
 
-        shift_x = math.trunc(arr[i].shape[1] / 10)
+        shift_x = math.trunc(arr.shape[2] / 10)
 
         err_x_left = np.empty((shift_x), dtype=np.float64)
         err_x_right = np.empty((shift_x), dtype=np.float64)
@@ -173,8 +173,8 @@ if __name__ == "__main__":
 
     # query CRISP state
     if stage.get_crisp_state() != "F":
-        # warnings.warn("CRISP not locked!")
-        stage.lock_crisp()
+        warnings.warn("CRISP not locked!")
+        # stage.lock_crisp()
 
     mid_point = (0, 0)  # scan mid-point
     scan_range_factor = 2  # number of overlapping fovs
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     )
 
     if confirm == "y":
-        vals = {}
+        vals = {"2": {}, "3": {}, "4": {}, "5": {}, "6": {}, "7": {}}
 
         for z in range(2, 8):
             cam.set_roi_zones(z)
@@ -219,7 +219,7 @@ if __name__ == "__main__":
             stage.wait_for_device()
 
         # save filtering values
-        with open("./scripts/processing/align_data_flat.json", "w") as file:
+        with open("./scripts/processing/align_data_tilt.json", "w") as file:
             file.write(json.dumps(vals, indent=4))
 
     # housekeeping
