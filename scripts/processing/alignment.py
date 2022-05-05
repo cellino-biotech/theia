@@ -53,7 +53,7 @@ def align(arr: ndarray) -> ndarray:
 
     # read alignment data file
     file_dir = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "align_data_flat.json"
+        os.path.dirname(os.path.realpath(__file__)), "align_data_tilt.json"
     )
     if os.path.exists(file_dir):
         with open(file_dir) as file:
