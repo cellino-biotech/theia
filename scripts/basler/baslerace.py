@@ -16,19 +16,20 @@ class ACA2040:
         pix_format: str = "Mono12p",
         exposure_time_us: int = 100,
         frame_width_pix: int = 2064,
+        sensor_pixel_size_mm: float = 370e-6,
         num_buffers: int = 15,
     ):
         self.sensor_width_pix = 2064
         self.sensor_height_pix = 1544
-        self.sensor_pix_size_mm = 380e-6
         self.fps_max = 635
-
-        self.fov_height_mm = self.sensor_height_pix * self.sensor_pix_size_mm
 
         self.pix_format = pix_format
         self.exposure_time_us = exposure_time_us
         self.frame_width_pix = frame_width_pix
+        self.sensor_pix_size_mm = sensor_pixel_size_mm
         self.num_buffers = num_buffers
+
+        self.fov_height_mm = self.sensor_height_pix * self.sensor_pix_size_mm
 
         try:
             self.dev = InstantCamera(TlFactory.GetInstance().CreateFirstDevice())
