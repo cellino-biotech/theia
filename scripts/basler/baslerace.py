@@ -1,3 +1,7 @@
+# ===============================================================================
+#    Camera control for Basler ACA2040 120um camera sensor
+# ===============================================================================
+
 import math
 import warnings
 import numpy as np
@@ -6,6 +10,7 @@ import tifffile as tf
 from pypylon import pylon, genicam
 from pypylon.pylon import InstantCamera, TlFactory
 from numpy import ndarray
+from nidaqmx import Task
 
 
 class ACA2040:
@@ -78,6 +83,13 @@ class ACA2040:
             img_arr = np.transpose(img_arr, axes=[1, 0, 2, 3])
 
         return img_arr
+
+    @staticmethod
+    def illuminator(on_state: bool = True):
+        """Toggle LED illuminator"""
+        with Task() as task:
+            task.do_channels.add_do_chan("Dev1/port0/line0")
+            task.write(on_state)
 
     def crop_overlap_zone(self, img_arr: ndarray) -> ndarray:
         """Remove non-overlapping rows from each plane"""
