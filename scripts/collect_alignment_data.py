@@ -1,5 +1,6 @@
 # ===============================================================================
-#    Use XY encoder output signals to drive camera acquisition during scan
+#    Collect alignment data for acquisition stack corrections
+#    Requires grid target
 # ===============================================================================
 
 import math
@@ -15,7 +16,7 @@ from matplotlib import pyplot as plt
 
 def row_shift(arr: ndarray, plot: bool = False) -> ndarray:
     arr = arr.astype(np.float64)
-    rows = np.zeros((arr.shape[0],), dtype=int)
+    rows = np.zeros((arr.shape[0],), dtype=np.int16)
 
     for i in range(int(arr.shape[0] / 2)):
         # subtract corresponding image slices for reference
@@ -24,7 +25,8 @@ def row_shift(arr: ndarray, plot: bool = False) -> ndarray:
         err_baseline = np.sqrt(np.sum(np.square(subtraction)))
 
         # shift images by a fraction of original shape
-        shift_y = math.trunc(arr.shape[1] / 10)
+        # shift_y = math.trunc(arr.shape[1] / 20)
+        shift_y = 200
 
         err_y_down = np.empty((shift_y), dtype=np.float64)
         err_y_up = np.empty((shift_y), dtype=np.float64)
@@ -87,7 +89,8 @@ def col_shift(arr: ndarray, plot: bool = False) -> ndarray:
 
         err_baseline = np.sqrt(np.sum(np.square(subtraction)))
 
-        shift_x = math.trunc(arr.shape[2] / 10)
+        # shift_x = math.trunc(arr.shape[2] / 10)
+        shift_x = 20
 
         err_x_left = np.empty((shift_x), dtype=np.float64)
         err_x_right = np.empty((shift_x), dtype=np.float64)
@@ -167,8 +170,6 @@ def scan(
 
 
 if __name__ == "__main__":
-    # initialize devices
-    cam = ACA2040(exposure_time_us=30)
     stage = MS2000("COM3", 115200)
 
     # query CRISP state
@@ -178,15 +179,6 @@ if __name__ == "__main__":
 
     mid_point = (0, 0)  # scan mid-point
     scan_range_factor = 2  # number of overlapping fovs
-
-    scan_range = scan_range_factor * cam.fov_height_mm
-    total_row_acq = cam.sensor_height_pix * (scan_range_factor + 1)
-
-    # configure camera triggers and IO
-    cam.set_trigger()
-    cam.set_io_control(line=2, source="ExposureActive")
-
-    stage_vel = "{:.4f}".format(cam.sensor_pix_size_mm * cam.fps_max / 2)
 
     confirm = input(
         """This process will overwrite the current alignment data. """
@@ -198,7 +190,17 @@ if __name__ == "__main__":
         vals = {"2": {}, "3": {}, "4": {}, "5": {}, "6": {}, "7": {}}
 
         for z in range(2, 8):
+            cam = ACA2040(exposure_time_us=30)
+
+            # configure camera triggers and IO
+            cam.set_trigger()
+            cam.set_io_control(line=2, source="ExposureActive")
+
             cam.set_roi_zones(z)
+
+            scan_range = scan_range_factor * cam.fov_height_mm
+            total_row_acq = cam.sensor_height_pix * (scan_range_factor + 1)
+            stage_vel = "{:.4f}".format(cam.sensor_pix_size_mm * cam.fps_max / 2)
 
             # initiate scan and data acquisition
             scan(
@@ -211,6 +213,7 @@ if __name__ == "__main__":
                 total_row_acq,
             )
             img = cam.acquire_stack(z, total_row_acq)
+            cam.close()
 
             vals[str(z)]["rows"] = row_shift(img).tolist()
             vals[str(z)]["cols"] = col_shift(img).tolist()
@@ -219,9 +222,7 @@ if __name__ == "__main__":
             stage.wait_for_device()
 
         # save filtering values
-        with open("./scripts/processing/align_data_tilt.json", "w") as file:
+        with open("./scripts/processing/align_data_flat.json", "w") as file:
             file.write(json.dumps(vals, indent=4))
 
-    # housekeeping
     stage.close()
-    cam.close()

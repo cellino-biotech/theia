@@ -8,4 +8,4 @@ def illuminator(on_state: bool = True):
 
 
 if __name__ == "__main__":
-    illuminator(True)
+    illuminator()

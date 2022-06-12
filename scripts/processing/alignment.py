@@ -29,18 +29,24 @@ def crop(arr: list) -> ndarray:
         if arr[i].shape[0] > shape[0]:
             diff = arr[i].shape[0] - shape[0]
 
-            if diff % 2:
-                arr[i] = arr[i][int(diff / 2) + 1 : int(-diff / 2)]
+            if diff == 1:
+                arr[i] = arr[i][:-1]
             else:
-                arr[i] = arr[i][int(diff / 2) : int(-diff / 2)]
+                if diff % 2:
+                    arr[i] = arr[i][int(diff / 2) + 1 : int(-diff / 2)]
+                else:
+                    arr[i] = arr[i][int(diff / 2) : int(-diff / 2)]
 
         if arr[i].shape[1] > shape[1]:
             diff = arr[i].shape[1] - shape[1]
 
-            if diff % 2:
-                arr[i] = arr[i][:, int(diff / 2) + 1 : int(-diff / 2)]
+            if diff == 1:
+                arr[i] = arr[i][:, :-1]
             else:
-                arr[i] = arr[i][:, int(diff / 2) : int(-diff / 2)]
+                if diff % 2:
+                    arr[i] = arr[i][:, int(diff / 2) + 1 : int(-diff / 2)]
+                else:
+                    arr[i] = arr[i][:, int(diff / 2) : int(-diff / 2)]
 
     return np.stack(arr, axis=0).astype(np.uint16)
 

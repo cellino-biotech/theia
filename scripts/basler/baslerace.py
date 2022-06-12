@@ -22,7 +22,7 @@ class ACA2040:
         exposure_time_us: int = 100,
         frame_width_pix: int = 2064,
         sensor_pixel_size_mm: float = 370e-6,
-        num_buffers: int = 15,
+        num_buffers: int = 5,
     ):
         self.sensor_width_pix = 2064
         self.sensor_height_pix = 1544
@@ -43,7 +43,7 @@ class ACA2040:
             self.dev.Open()
 
             # allocate buffers for acquisitions
-            self.dev.MaxNumBuffer.SetValue(self.num_buffers)
+            self.dev.MaxNumBuffer = self.num_buffers
 
             # alternative mode is "SingleFrame"
             self.dev.AcquisitionMode.SetValue("Continuous")
@@ -58,11 +58,8 @@ class ACA2040:
             self.dev.OffsetX.SetValue(0)
             self.dev.Width.SetValue(self.frame_width_pix)
 
-        except genicam.GenericException as e:
-            if "Device is exlusively opened by another client" in e:
-                print("Camera is opened in another program!")
-            else:
-                print("Exception: ", e)
+        except genicam.GenericException:
+            raise
 
     @staticmethod
     def save_image_array(img_arr: ndarray, fname: str):
@@ -79,17 +76,31 @@ class ACA2040:
         ImageJ and Napari
         """
         if img_arr.ndim < 4:
+            # TODO: consider changing expand_dims axis argument to 1?
             img_arr = np.expand_dims(img_arr, axis=0)
             img_arr = np.transpose(img_arr, axes=[1, 0, 2, 3])
-
         return img_arr
 
     @staticmethod
-    def illuminator(on_state: bool = True):
+    def illuminator(on_state: bool = True, channel: str = "Dev1/port0/line0"):
         """Toggle LED illuminator"""
         with Task() as task:
-            task.do_channels.add_do_chan("Dev1/port0/line0")
+            task.do_channels.add_do_chan(channel)
             task.write(on_state)
+
+    def device_temp(self) -> tuple:
+        """Check the device temperature state
+
+        Returned tuple contains temperature value (degrees Celsius)
+        as well as the temperature state ("Ok", "Critical", "Error")
+        """
+        # select the internal temperature proxy
+        # NOTE: currently, the only option is the core board temp
+        self.dev.DeviceTemperatureSelector.SetValue("Coreboard")
+        return (
+            self.dev.DeviceTemperature.GetValue(),
+            self.dev.TemperatureState.GetValue(),
+        )
 
     def crop_overlap_zone(self, img_arr: ndarray) -> ndarray:
         """Remove non-overlapping rows from each plane"""
@@ -161,15 +172,21 @@ class ACA2040:
         These settings persist in camera memory and can affect
         future acquisitions
         """
-        if genicam.IsWritable(self.dev.ROIZoneMode):
-            for i in range(8):
-                self.dev.ROIZoneSelector.SetValue(f"Zone{i}")
-                self.dev.ROIZoneMode.SetValue("Off")
+        try:
+            if genicam.IsWritable(self.dev.ROIZoneMode):
+                for i in range(8):
+                    self.dev.ROIZoneSelector.SetValue(f"Zone{i}")
+                    self.dev.ROIZoneMode.SetValue("Off")
+        except genicam.TimeoutException:
+            print("Unable to reset camera ROI zones")
 
-        if genicam.IsWritable(self.dev.OffsetY):
-            # reset camera to full FOV
-            self.dev.OffsetY.SetValue(0)
-            self.dev.Height.SetValue(self.dev.Height.Max)
+        try:
+            if genicam.IsWritable(self.dev.OffsetY):
+                # reset camera to full FOV
+                self.dev.OffsetY.SetValue(0)
+                self.dev.Height.SetValue(self.dev.Height.Max)
+        except genicam.TimeoutException:
+            print("Unable to reset camera y-offset")
 
     def set_roi_zones(self, num_zones: int = 3):
         """Automate the creation of evenly-spaced ROI zones
@@ -256,14 +273,17 @@ class ACA2040:
         # initialize counter to track acquisitions
         acq_counter = 0
 
+        print(f"total row acq: {total_row_acq}")
+
         try:
-            self.dev.StartGrabbingMax(total_row_acq, pylon.GrabStrategy_OneByOne)
+            self.dev.StartGrabbingMax(total_row_acq)
 
             while self.dev.IsGrabbing():
                 # NOTE: timeout must be greater than exposure time!
                 grab_result = self.dev.RetrieveResult(
                     timeout, pylon.TimeoutHandling_ThrowException
                 )
+                print(acq_counter)
 
                 if grab_result.GrabSucceeded():
                     for i in range(num_zones):
@@ -288,9 +308,13 @@ class ACA2040:
 
     def close(self):
         """Housekeeping"""
+        # return camera to full FOV
         self.reset_roi_zones()
 
         # deactivate triggering
-        self.dev.TriggerMode.SetValue("Off")
+        try:
+            self.dev.TriggerMode.SetValue("Off")
+        except genicam.TimeoutException:
+            print("Unable to reset camera trigger mode")
 
         self.dev.Close()

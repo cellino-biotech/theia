@@ -1,6 +1,6 @@
 # ===============================================================================
 #    Combine camera and stage logic
-# 
+#
 #    To reconstruct an image spanning one FOV:
 #       fov_mm = 1544 * pixel_size_mm (pixel_size_mm = 0.35E-3)
 #       scan_speed_mm-s = pixel_size_mm * fps
@@ -15,18 +15,19 @@ import numpy as np
 
 from pypylon import pylon, genicam
 from datetime import datetime
-from asi.asistage import MS2000
+from asistage import MS2000
 
 
 # constants
-SENSOR_WIDTH_PIX  = 2064
+SENSOR_WIDTH_PIX = 2064
 SENSOR_HEIGHT_PIX = 1544
-PIX_SIZE_MM       = 0.35E-3 # determined from ImageJ
-EXPOSURE_TIME_US  = 1500    # given max light intensity
-FPS_MAX           = 635
+PIX_SIZE_MM = 0.35e-3  # determined from ImageJ
+EXPOSURE_TIME_US = 1500  # given max light intensity
+FPS_MAX = 635
 
 # inferred constants
 FOV_HEIGHT_MM = SENSOR_HEIGHT_PIX * PIX_SIZE_MM
+
 
 def create_data_dir():
     now = datetime.now()
@@ -35,22 +36,24 @@ def create_data_dir():
     os.mkdir(path)
     return (path, dirname)
 
+
 def reset_roi_zones(camera: object):
     for i in range(8):
         camera.ROIZoneSelector.SetValue(f"Zone{i}")
         camera.ROIZoneMode.SetValue("Off")
-    
+
     if genicam.IsWritable(camera.OffsetY):
         # reset camera to full FOV
         camera.OffsetY.SetValue(0)
         camera.Height = camera.Height.Max
-    
+
     camera.AcquisitionFrameRateEnable.SetValue(False)
+
 
 def set_roi_zones(camera: object, num_zones: int = 3):
     reset_roi_zones(camera)
 
-    zone_spacing = math.trunc((SENSOR_HEIGHT_PIX-4) / (num_zones-1))
+    zone_spacing = math.trunc((SENSOR_HEIGHT_PIX - 4) / (num_zones - 1))
     zone_offset = 0
 
     for i in range(num_zones):
@@ -72,6 +75,7 @@ def set_roi_zones(camera: object, num_zones: int = 3):
     camera.AcquisitionFrameRateEnable.SetValue(True)
     camera.AcquisitionFrameRate.SetValue(FPS_MAX)
 
+
 def camera_setup():
     try:
         # grab camera
@@ -92,8 +96,8 @@ def camera_setup():
         camera.MaxNumBuffer = 5
 
         # use GPIO as trigger
-        camera.LineSelector.SetValue("Line3")
-        camera.LineMode.SetValue("Input")
+        # camera.LineSelector.SetValue("Line3")
+        # camera.LineMode.SetValue("Input")
 
         return camera
     except genicam.GenericException as e:
@@ -102,6 +106,7 @@ def camera_setup():
         else:
             print("Exception: ", e)
         return None
+
 
 def save_image_array(img_array: object, filename: str):
     # add an empty color channel
@@ -112,7 +117,15 @@ def save_image_array(img_array: object, filename: str):
 
     tifffile.imwrite(filename, img_array, imagej=True)
 
-def record_images(camera: object, stage: object, path: str, dirname: str, num_zones: int = 3, total_row_acq: int = 1544):
+
+def record_images(
+    camera: object,
+    stage: object,
+    path: str,
+    dirname: str,
+    num_zones: int = 3,
+    total_row_acq: int = 1544,
+):
     # initialize data array
     reconstruction = np.empty((num_zones, total_row_acq, SENSOR_WIDTH_PIX), np.uint16)
 
@@ -129,24 +142,28 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
         counter = 0
 
         while camera.IsGrabbing():
-            grab_result = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+            grab_result = camera.RetrieveResult(
+                5000, pylon.TimeoutHandling_ThrowException
+            )
 
             if grab_result.GrabSucceeded():
                 for i in range(num_zones):
-                    reconstruction[i][counter] = grab_result.Array[i*4].reshape((1, 2064))
+                    reconstruction[i][counter] = grab_result.Array[i * 4].reshape(
+                        (1, 2064)
+                    )
                 counter += 1
             else:
                 print("Error: ", grab_result.ErrorCode, grab_result.ErrorDescription)
             grab_result.Release()
-        
+
         overlap_stack = []
 
         for i in range(num_zones):
             camera.ROIZoneSelector.SetValue(f"Zone{i}")
             offset = camera.ROIZoneOffset.GetValue()
 
-            start = 1544-offset
-            stop = total_row_acq-(1544+offset)
+            start = 1544 - offset
+            stop = total_row_acq - (1544 + offset)
 
             overlap_stack.append(reconstruction[i, start:stop, :])
 
@@ -155,19 +172,20 @@ def record_images(camera: object, stage: object, path: str, dirname: str, num_zo
     except genicam.GenericException as e:
         print("Exception: ", e)
     finally:
-        reset_roi_zones(camera)
-        
+        # reset_roi_zones(camera)
+
         camera.Close()
         stage.close()
         # print("FINISHED")
+
 
 def scan(stage: object, mid_point: tuple, scan_range: float):
     vel = PIX_SIZE_MM * FPS_MAX
 
     stage.set_speed(x=vel, y=vel)
 
-    start = mid_point[0] - scan_range/2 - FOV_HEIGHT_MM/2
-    stop = mid_point[0] + scan_range/2 + FOV_HEIGHT_MM/2
+    start = mid_point[0] - scan_range / 2 - FOV_HEIGHT_MM / 2
+    stop = mid_point[0] + scan_range / 2 + FOV_HEIGHT_MM / 2
 
     stage.scan_x_axis(start=start, stop=stop)
 
@@ -182,16 +200,26 @@ if __name__ == "__main__":
 
     num_zones = 5
     mid_point = (0, 0)
-    scan_range_factor = 2 # number of overlapping fov images
+    scan_range_factor = 2  # number of overlapping fov images
 
     scan_range = scan_range_factor * FOV_HEIGHT_MM
 
-    total_row_acq = SENSOR_HEIGHT_PIX * (scan_range_factor + 2) 
+    total_row_acq = SENSOR_HEIGHT_PIX * (scan_range_factor + 2)
 
     if camera is not None:
         set_roi_zones(camera, num_zones)
 
-        record = threading.Thread(target=record_images, args=(camera, stage, path, dirname, num_zones, total_row_acq,))
+        record = threading.Thread(
+            target=record_images,
+            args=(
+                camera,
+                stage,
+                path,
+                dirname,
+                num_zones,
+                total_row_acq,
+            ),
+        )
         record.start()
 
     scan(stage, mid_point=mid_point, scan_range=scan_range)
@@ -208,9 +236,9 @@ if __name__ == "__main__":
 
         if description:
             f.write(f"Description: {description}")
-    
+
     # check if acquisitions finished
     while threading.active_count() > 1:
         time.sleep(0.2)
-    
+
     print("FINISHED")
