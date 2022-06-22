@@ -1,3 +1,7 @@
+# ===============================================================================
+#    Class to define MatrixPortal serial communication
+# ===============================================================================
+
 import serial
 
 from serial import SerialException

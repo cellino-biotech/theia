@@ -1,4 +1,7 @@
-import time
+# ===============================================================================
+#    Illuminate entire LED array
+# ===============================================================================
+
 import board
 import displayio
 import rgbmatrix
@@ -35,12 +38,12 @@ matrix = rgbmatrix.RGBMatrix(
 
 display = framebufferio.FramebufferDisplay(matrix)
 
-# create Bitmap with two colors
-bitmap = displayio.Bitmap(display.width, display.height, 2)
-
-# create corresponding Palette with two colors
+# create Palette with one color (white)
 palette = displayio.Palette(1)
 palette[0] = 0xFFFFFF
+
+# create Bitmap with one color
+bitmap = displayio.Bitmap(display.width, display.height, 1)
 
 # create TileGrid using the Bitmap and Palette
 tile_grid = displayio.TileGrid(bitmap, pixel_shader=palette)

@@ -1,9 +1,16 @@
+# ===============================================================================
+#    Display vertical and horizontal sequential lines for automated
+#    alignment algorithm
+# ===============================================================================
+
 import time
 import board
 import displayio
 import rgbmatrix
 import framebufferio
 
+
+DELAY = 0.1  # seconds
 
 # free up display buses and pins
 displayio.release_displays()
@@ -35,24 +42,22 @@ matrix = rgbmatrix.RGBMatrix(
 
 display = framebufferio.FramebufferDisplay(matrix)
 
-# create Bitmap with two colors
-bitmap = displayio.Bitmap(display.width, display.height, 2)
-
-# create corresponding Palette with two colors
+# create Palette with two colors
 palette = displayio.Palette(2)
 palette[0] = 0x000000
 palette[1] = 0xFFFFFF
 
+# create Bitmap with two colors
+bitmap = displayio.Bitmap(display.width, display.height, 2)
+
 # create TileGrid using the Bitmap and Palette
-tile_grid = displayio.TileGrid(bitmap, pixel_shader=palette)
+grid = displayio.TileGrid(bitmap, pixel_shader=palette)
 
 # create Group
 group = displayio.Group()
 
 # add TileGrid to Group
-group.append(tile_grid)
-
-timeout = 0.01
+group.append(grid)
 
 while True:
     for col in range(display.width):
@@ -60,9 +65,9 @@ while True:
             for y in range(display.height):
                 bitmap[x, y] = 1 if x == col else 0
         display.show(group)
-        time.sleep(timeout)
+        time.sleep(DELAY)
         print("1")
-        time.sleep(timeout)
+        time.sleep(DELAY)
 
     for y in range(display.height):
         bitmap[display.width - 1, y] = 0
@@ -73,9 +78,9 @@ while True:
             for x in range(display.width):
                 bitmap[x, y] = 1 if y == row else 0
         display.show(group)
-        time.sleep(timeout)
+        time.sleep(DELAY)
         print("1")
-        time.sleep(timeout)
+        time.sleep(DELAY)
 
     for x in range(display.width):
         bitmap[x, display.height - 1] = 0

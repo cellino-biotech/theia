@@ -1,14 +1,15 @@
 # ===============================================================================
-#    Display circle using the Adafruit display shapes library
+#    Flash entire LED array
 # ===============================================================================
 
+import time
 import board
 import displayio
 import rgbmatrix
 import framebufferio
 
-from adafruit_display_shapes.circle import Circle
 
+DELAY = 2  # seconds
 
 # free up display buses and pins
 displayio.release_displays()
@@ -40,23 +41,31 @@ matrix = rgbmatrix.RGBMatrix(
 
 display = framebufferio.FramebufferDisplay(matrix)
 
-# set brightness to max value
-# NOTE: any value between 0 and 1.0 does not produce a noticeable affect
-display.brightness = 1.0
+# create Palette with two colors
+palette = displayio.Palette(2)
+palette[0] = 0x000000
+palette[1] = 0xD22B2B
 
-# set refresh rate
-display.refresh(target_frames_per_second=60, minimum_frames_per_second=1)
+# create Bitmap, TileGrid, and Group container objects
+bitmaps = [displayio.Bitmap(display.width, display.height, 2) for _ in range(2)]
+grids = [displayio.TileGrid(bitmaps[i], pixel_shader=palette) for i in range(2)]
+groups = [displayio.Group() for _ in range(2)]
 
-# generate white circle with radius 15 pix at location (27, 34)
-circle = Circle(27, 34, 10, fill=0xFFFFFF)
+# add TileGrids to Group objects
+for i in range(2):
+    groups[i].append(grids[i])
 
-# create Group
-group = displayio.Group()
+for x in range(display.width):
+    for y in range(display.height):
+        bitmaps[0][x, y] = 1
 
-# add Circle to Group
-group.append(circle)
-
-display.show(group)
+for x in range(display.width):
+    for y in range(display.height):
+        bitmaps[1][x, y] = 0
 
 while True:
-    pass
+    display.show(groups[0])
+    time.sleep(DELAY)
+
+    display.show(groups[1])
+    time.sleep(DELAY)
