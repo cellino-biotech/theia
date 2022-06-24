@@ -6,8 +6,8 @@ const path = require('path')
 const Store = require('./Store')
 
 // set environment
-process.env.NODE_ENV = 'development'
-// process.env.NODE_ENV = 'production'
+// process.env.NODE_ENV = 'development'
+process.env.NODE_ENV = 'production'
 
 const isDev = process.env.NODE_ENV !== 'production' ? true : false
 const isMac = process.platform === 'darwin' ? true : false
