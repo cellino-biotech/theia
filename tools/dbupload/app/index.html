@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <meta http-equiv="X-Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <link rel="stylesheet" href="css/styles.css">
+    <title>DB Uploader</title>
+</head>
+
+<body>
+    <header>
+        <img src="../assets/Cellino_logo_purple.png" alt="">
+    </header>
+    <main>
+        <form id="general">
+            <h2>General Information</h2>
+            <section>
+                <div>
+                    <label for="mode">Mode</label>
+                    <input type="text" id="mode" name="mode" placeholder="tie">
+                </div>
+                <div>
+                    <label for="target">Target</label>
+                    <input type="text" id="target" name="target" placeholder="cells">
+                </div>
+            </section>
+            <label for="url">URL</label>
+            <input type="text" id="url" name="url">
+            </form>
+        <form id="acquisition">
+            <h2>Acquisition Parameters</h2>
+            <label for="type">Type</label>
+            <input type="text" id="type" name="type" placeholder="scan">
+            <section>
+                <div>
+                    <label for="vertical_range_um">Vertical Range (um)</label>
+                    <input type="text" id="vertical_range_um" name="vertical_range_um" placeholder="10">
+                </div>
+                <div>
+                    <label for="vertical_increment_um">Increment (um)</label>
+                    <input type="text" id="vertical_increment_um" name="vertical_increment_um" placeholder="2">
+                </div>
+            </section>
+            <section>
+                <div>
+                    <label for="reconstructions">Reconstructions</label>
+                    <input type="text" id="reconstructions" name="reconstructions" placeholder="5">
+                </div>
+                <div>
+                    <label for="overlap_fovs">Overlapping FOVs</label>
+                    <input type="text" id="overlap_fovs" name="overlap_fovs" placeholder="2">
+                </div>
+            </section>
+            <section>
+                <div>
+                    <label for="scan_distance_mm">Scan Distance (mm)</label>
+                    <input type="text" id="scan_distance_mm" name="scan_distance_mm" placeholder="10">
+                </div>
+                <div>
+                    <label for="scan_velocity_mm_s">Scan Velocity (mm/s)</label>
+                    <input type="text" id="scan_velocity_mm_s" name="scan_velocity_mm_s" placeholder="0.001">
+                </div>
+            </section>
+            <section>
+                <div>
+                    <label for="pixel_size_um">Pixel Size (um)</label>
+                    <input type="text" id="pixel_size_um" name="pixel_size_um" placeholder="0.035">
+                </div>
+                <div>
+                    <label for="resolution">Resolution</label>
+                    <input type="text" id="resolution" name="resolution" placeholder="12bit">
+                </div>
+            </section>
+            </form>
+        <form id="illumination">
+            <h2>Illumination Parameters</h2>
+            <section>
+                <div>
+                    <label for="led_intensity">LED Intensity (%)</label>
+                    <input type="text" id="led_intensity" name="led_intensity" placeholder="100">
+                </div>
+                <div>
+                    <label for="exposure_time_ms">Exposure Time (ms)</label>
+                    <input type="text" id="exposure_time_ms" name="exposure_time_ms" placeholder="0.05">
+                </div>
+            </section>
+            <section>
+                <div>
+                    <label for="color">Color</label>
+                    <input type="text" id="color" name="color" placeholder="#FFFFFF">
+                </div>
+                <div>
+                    <label for="pattern">Pattern</label>
+                    <input type="text" id="pattern" name="pattern" placeholder="circle">
+                </div>
+            </section>
+            <section>
+                <div>
+                    <label for="pattern_radius_pix">Pattern Radius</label>
+                    <input type="text" id="pattern_radius_pix" name="pattern_radius_pix" placeholder="10">
+                </div>
+                <div>
+                    <label for="pattern_radial_thickness_pix">Radial Thickness</label>
+                    <input type="text" id="pattern_radial_thickness_pix" name="pattern_radial_thickness_pix" placeholder="10">
+                </div>
+            </section>
+            <section>
+                <div>
+                    <label for="pattern_rotation_deg">Pattern Rotation (&deg;)</label>
+                    <input type="text" id="pattern_rotation_deg" name="pattern_rotation_deg" placeholder="90">
+                </div>
+                <div>
+                    <label for="led_sample_distance_mm">Sample Distance (mm)</label>
+                    <input type="text" id="led_sample_distance_mm" name="led_sample_distance_mm" placeholder="50">
+                </div>
+            </section>
+            <section>
+                <div>
+                    <label for="na_outer">NA Outer</label>
+                    <input type="text" id="na_outer" name="na_outer">
+                </div>
+                <div>
+                    <label for="na_inner">NA Inner</label>
+                    <input type="text" id="na_inner" name="na_inner">
+                </div>
+            </section>
+            </form>
+    </main>
+    <footer>
+        <a href="javascript:void(0);" id="clear"><i class="fa-solid fa-circle-xmark"></i></a>
+        <a href="javascript:void(0);" id="reset"><i class="fa-solid fa-arrow-rotate-right"></i></a>
+        <a href="javascript:void(0);" id="save"><i class="fa-solid fa-floppy-disk"></i></a>
+        <a href="javascript:void(0);" id="submit"><i class="fa-solid fa-file-arrow-up"></i></a>
+    </footer>
+
+    <script src="./renderer.js"></script>
+</body>
+
+</html>

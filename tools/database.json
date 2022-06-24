@@ -1,0 +1,46 @@
+{
+    "example1": {
+        "id": 1,
+        "mode": "tie",
+        "target": "cells",
+        "date": "2022-05-10 10:45",
+        "url": "url/to/drive/image/file",
+        "acquisition_parameters": {
+            "acquisition_type": "scan",
+            "vertical_range_um": 10,
+            "total_reconstructions": 5,
+            "total_overlap_fovs": 40,
+            "scan_distance": 22.2336,
+            "scan_velocity_mm_s": "0.1143",
+            "pixel_size_mm": 0.00036,
+            "resolution": "12bit"
+        },
+        "illumination_parameters": {
+            "led_intensity": 100,
+            "exposure_time_ms": 0.050
+        }
+    },
+    "example2": {
+        "id": 2,
+        "mode": "dpc",
+        "target": "focus_star_100nm",
+        "date": "2022-05-10 10:45",
+        "url": "url/to/drive/image/file",
+        "acquisition_parameters": {
+            "vertical_range_um": 10,
+            "vertical_increment_um": 2,
+            "resolution": "12bit"
+        },
+        "illumination_params": {
+            "pattern": "semicircle",
+            "color": "#FF0000",
+            "rotation_deg": 90,
+            "led_distance_from_sample_mm": 50,
+            "led_circle_radius": 7,
+            "led_intensity": 100,
+            "exposure_time_ms": 190,
+            "NA_inner": 0.2,
+            "NA_outer": 0.3
+        }
+    }   
+}
