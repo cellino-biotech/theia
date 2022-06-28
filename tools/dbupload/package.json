@@ -1,7 +1,7 @@
 {
-  "name": "visualflow",
+  "name": "dbuploader",
   "version": "1.0.0",
-  "description": "Electron real-time plotting utility",
+  "description": "Mongo database uploader utility",
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -27,7 +27,9 @@
   },
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+        "icon": "/Users/lukasvasadi/Code/theia/tools/dbupload/assets/icons/cellino_icon_greyscale.png"
+      },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
