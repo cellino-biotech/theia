@@ -11,22 +11,8 @@ import framebufferio
 
 
 CENTER = (31.5, 31.5)  # pixel coordinates
-RADIUS = 15  # pixels
-THICKNESS = 3
-DIV = 4  # DIV=8 corresponds to 0, 30, 60, 90 deg
-DELAY = 2  # seconds
-
-
-def boundary_points(theta: float) -> list:
-    """Determine points that define circle diameter at some angle"""
-
-    x = RADIUS * math.cos(theta)
-    y = RADIUS * math.sin(theta)
-
-    return [
-        [math.ceil(CENTER[0] + x), math.ceil(CENTER[1] + y)],
-        [math.floor(CENTER[0] - x), math.floor(CENTER[1] - y)],
-    ]
+RADIUS = 8  # pixels
+THICKNESS = 1  # pixels
 
 
 def point_inside_circle(x: int, y: int, r: int) -> bool:
@@ -37,33 +23,6 @@ def point_inside_circle(x: int, y: int, r: int) -> bool:
         (x - CENTER[0]) ** 2 + (y - CENTER[1]) ** 2
     ) == (r**2)
 
-
-step = 2 * math.pi / DIV
-steps = [i * step for i in range(int(DIV / 2))]
-points = [[] for _ in range(DIV)]
-
-# calculate points for outer circle
-for i in range(len(steps)):
-    (a, b) = boundary_points(steps[i])
-
-    for x in range(64):
-        for y in range(64):
-            # point lies inside circle if (x - center_x)² + (y - center_y)² < radius²
-            if point_inside_circle(x, y, RADIUS) and not point_inside_circle(
-                x, y, RADIUS - THICKNESS
-            ):
-                # only perform computation if point is eligible
-                d = (x - a[0]) * (b[1] - a[1]) - (y - a[1]) * (b[0] - a[0])
-
-                if d > 0:
-                    points[i].append([x, y])
-                elif d < 0:
-                    points[i + int(DIV / 2)].append([x, y])
-                else:
-                    # if point lies on diameter line (which should not be possible if
-                    # using floating point center coordinate), add to both lists
-                    points[i].append([x, y])
-                    points[i + int(DIV / 2)].append([x, y])
 
 # free up display buses and pins
 displayio.release_displays()
@@ -98,23 +57,26 @@ display = framebufferio.FramebufferDisplay(matrix)
 # create Palette with two colors
 palette = displayio.Palette(2)
 palette[0] = 0x000000
-palette[1] = 0xFFFFFF
+palette[1] = 0xFF0000
 
 # create Bitmap, TileGrid, and Group container objects
-bitmaps = [displayio.Bitmap(display.width, display.height, 2) for _ in range(DIV)]
-grids = [displayio.TileGrid(bitmaps[i], pixel_shader=palette) for i in range(DIV)]
-groups = [displayio.Group() for _ in range(DIV)]
+bitmap = displayio.Bitmap(display.width, display.height, 2)
+grid = displayio.TileGrid(bitmap, pixel_shader=palette)
+group = displayio.Group()
 
-# add TileGrids to Group objects
-for i in range(DIV):
-    groups[i].append(grids[i])
+# add TileGrid to Group object
+group.append(grid)
 
-# assign pixel maps to Groups
-for j in range(DIV):
-    for p in points[j]:
-        bitmaps[j][p[0], p[1]] = 1
+# assign pixel map to Group
+for x in range(64):
+    for y in range(64):
+        # point lies inside circle if (x - center_x)² + (y - center_y)² < radius²
+        if point_inside_circle(x, y, RADIUS) and not point_inside_circle(
+            x, y, RADIUS - THICKNESS
+        ):
+            bitmap.append([x, y])
+
+display.show(group)
 
 while True:
-    for k in range(DIV):
-        display.show(groups[k])
-        time.sleep(DELAY)
+    pass
