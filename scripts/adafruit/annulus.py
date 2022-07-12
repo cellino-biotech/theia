@@ -2,8 +2,6 @@
 #    Display semicircle at arbitrary angles based on a division number
 # ===============================================================================
 
-import time
-import math
 import board
 import displayio
 import rgbmatrix
@@ -11,8 +9,11 @@ import framebufferio
 
 
 CENTER = (31.5, 31.5)  # pixel coordinates
-RADIUS = 8  # pixels
-THICKNESS = 1  # pixels
+RADIUS = 11  # pixels
+THICKNESS = 3  # pixels
+
+
+points = []
 
 
 def point_inside_circle(x: int, y: int, r: int) -> bool:
@@ -23,6 +24,14 @@ def point_inside_circle(x: int, y: int, r: int) -> bool:
         (x - CENTER[0]) ** 2 + (y - CENTER[1]) ** 2
     ) == (r**2)
 
+
+for x in range(64):
+    for y in range(64):
+        # point lies inside circle if (x - center_x)² + (y - center_y)² < radius²
+        if point_inside_circle(x, y, RADIUS) and not point_inside_circle(
+            x, y, RADIUS - THICKNESS
+        ):
+            points.append([x, y])
 
 # free up display buses and pins
 displayio.release_displays()
@@ -68,13 +77,8 @@ group = displayio.Group()
 group.append(grid)
 
 # assign pixel map to Group
-for x in range(64):
-    for y in range(64):
-        # point lies inside circle if (x - center_x)² + (y - center_y)² < radius²
-        if point_inside_circle(x, y, RADIUS) and not point_inside_circle(
-            x, y, RADIUS - THICKNESS
-        ):
-            bitmap.append([x, y])
+for p in points:
+    bitmap[p[0], p[1]] = 1
 
 display.show(group)
 
