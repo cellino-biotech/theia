@@ -102,6 +102,10 @@ class ACA2040:
             self.dev.TemperatureState.GetValue(),
         )
 
+    def device_framerate(self) -> int:
+        """Return device frame rate based on current configuration"""
+        return self.dev.ResultingFrameRate.GetValue()
+
     def crop_overlap_zone(self, img_arr: ndarray) -> ndarray:
         """Remove non-overlapping rows from each plane"""
         # we can infer the size of the overlapping array
