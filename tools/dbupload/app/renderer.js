@@ -7,8 +7,6 @@ const {
     MongoClient
 } = require('mongodb')
 
-const path = require('path')
-
 let client
 
 function notify(options) {
@@ -34,7 +32,7 @@ async function update(data) {
         // update data id based on document number
         data['id'] = docCount + 1
 
-        await collection.insertOne(data, function (err, res) {
+        await collection.insertOne(data, (err, res) => {
             if (err) {
                 // unsure how to mitigate
                 if (err.name !== 'MongoServerSelectionError') throw err
@@ -100,8 +98,12 @@ docReady(() => {
             var inputs = params[key].getElementsByTagName('input')
             for (let i in inputs) {
                 if (inputs[i].id) {
-                    if (inputs[i].value != '')
-                        userData[key][inputs[i].id] = inputs[i].value
+                    if (inputs[i].value != '') {
+                        if (isNaN(inputs[i].value))
+                            userData[key][inputs[i].id] = inputs[i].value
+                        else
+                            userData[key][inputs[i].id] = Number(inputs[i].value)
+                    }
                     else userData[key][inputs[i].id] = null
                 }
             }
